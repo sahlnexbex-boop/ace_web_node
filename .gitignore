@@ -1,0 +1,62 @@
+# ----------------------------------------
+# Node.js
+# ----------------------------------------
+# Dependency directories
+/node_modules
+/dist
+/build
+/out
+
+# Runtime and lock files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+.next/ # Usually for Next.js, but good to include if you might use it
+.nuxt/ # For Nuxt.js
+
+# Environment and config
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.DS_Store
+
+# Logs
+logs
+*.log
+
+# ----------------------------------------
+# IDE/Editor Files
+# ----------------------------------------
+# VS Code
+.vscode/
+
+# JetBrains IDEs (WebStorm, IntelliJ)
+.idea/
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# Vim
+*~
+*.swp
+.netrwhist
+
+# ----------------------------------------
+# Database and Deployment
+# ----------------------------------------
+# Database connection and credentials
+db_config.js
+config/db_credentials.js
+/config/*.env
+
+# Compiled TypeScript output (if you're using TypeScript)
+/ts-output
+*.js.map
+
+# Other artifacts
+/coverage
