@@ -17,6 +17,10 @@ import rankHoldersRoutes from "./routes/rankHolders.routes.js"
 import serviceRotes from "./routes/service.routes.js"
 import successStoriesRoutes from "./routes/successStories.routes.js";
 import testimonialRoutes from "./routes/testimonial.routes.js";
+import blogsRoutes from "./routes/blogs.routes.js";
+import eventRoutes from "./routes/event.routes.js";
+import webinarRoutes from "./routes/webinar.routes.js";
+import newsroutes from "./routes/news.routes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -42,6 +46,11 @@ app.use("/api/rankholders", rankHoldersRoutes);
 app.use("/api/social-service", serviceRotes);
 app.use("/api/success-stories", successStoriesRoutes);
 app.use("/api/testimonials", testimonialRoutes);
+app.use("/api/blogs", blogsRoutes);
+app.use("/api/events", eventRoutes);
+app.use("/api/webinars", webinarRoutes);
+app.use("/api/news", newsroutes);
+
 
 const PORT = process.env.PORT || 5000;
 
