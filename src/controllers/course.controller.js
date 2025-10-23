@@ -1,68 +1,70 @@
 import { Op } from "sequelize";
-import { deleteFile } from "../utils/fileHelper.js";
-import Result from "../models/result.model.js";
 import Course from "../models/course.model.js";
 import CourseCategory from "../models/courseCategory.model.js";
+import { deleteFile } from "../utils/fileHelper.js";
 
 const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
 
-// create
-export const createResult = async (req, res) => {
+// Create Course
+export const createCourse = async (req, res) => {
   try {
     const {
-      result_title,
-      result_description,
-      result_date,
-      result_type,
-      based_type,
-      course_id,
-      category_id,
+      course_name,
+      course_description,
+      course_rating,
+      course_category_id,
+      course_duration,
+      course_fee,
+      course_overview,
+      course_syllabus,
+      course_study_material,
       status,
     } = req.body;
 
-    if (!result_title || !result_date || !result_type || !based_type)
-      return res.status(400).json({ message: "Required fields are missing" });
+    if (!course_name || !course_category_id)
+      return res.status(400).json({ message: "Course name and category required" });
 
-    if (![1, 2].includes(Number(result_type)))
-      return res.status(400).json({ message: "Invalid result_type (must be 1 or 2)" });
+    const exists = await Course.findOne({ where: { course_name } });
+    if (exists) return res.status(400).json({ message: "Course already exists" });
 
-    if (![1, 2].includes(Number(based_type)))
-      return res.status(400).json({ message: "Invalid based_type (must be 1 or 2)" });
+    const category = await CourseCategory.findByPk(course_category_id);
+    if (!category) return res.status(400).json({ message: "Invalid category" });
 
-    if (based_type == 1) {
-      if (!course_id) return res.status(400).json({ message: "Course ID required" });
-      const course = await Course.findByPk(course_id);
-      if (!course) return res.status(400).json({ message: "Invalid Course ID" });
-    } else {
-      if (!category_id) return res.status(400).json({ message: "Category ID required" });
-      const category = await CourseCategory.findByPk(category_id);
-      if (!category) return res.status(400).json({ message: "Invalid Category ID" });
-    }
+    if (course_rating && Number(course_rating) > 5)
+      return res.status(400).json({ message: "Max rating is 5" });
 
-    const exists = await Result.findOne({ where: { result_title } });
-    if (exists)
-      return res.status(400).json({ message: "Result title already exists" });
-
-    const file = req.file
-      ? `${SERVER_URL}/uploads/results/${req.file.filename}`
+    const course_image = req.files?.course_image
+      ? `${SERVER_URL}/uploads/course/${req.files.course_image[0].filename}`
       : null;
 
-    const newResult = await Result.create({
-      result_title,
-      result_description,
-      result_date,
-      result_type,
-      based_type,
-      course_id: based_type == 1 ? course_id : null,
-      category_id: based_type == 2 ? category_id : null,
-      result_file: file,
+    const course_syllabus_file = req.files?.course_syllabus_file
+      ? `${SERVER_URL}/uploads/course/${req.files.course_syllabus_file[0].filename}`
+      : null;
+
+    const course_questions_file = req.files?.course_questions_file
+      ? `${SERVER_URL}/uploads/course/${req.files.course_questions_file[0].filename}`
+      : null;
+
+    const newCourse = await Course.create({
+      course_name,
+      course_description,
+      course_rating: course_rating || 0,
+      course_category_id,
+      course_duration,
+      course_fee,
+      course_overview,
+      course_syllabus,
+      course_study_material,
+      course_image,
+      course_syllabus_file,
+      course_questions_file,
       status: [0, 1].includes(Number(status)) ? Number(status) : 1,
       created_by: req.user?.user_id || 0,
     });
 
     res.status(201).json({
-      message: "Result created successfully",
-      data: newResult,
+      message: "Course created successfully",
+      data: newCourse,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -70,40 +72,31 @@ export const createResult = async (req, res) => {
 };
 
 // list
-export const getResults = async (req, res) => {
+export const getCourses = async (req, res) => {
   try {
-    const {
-      page = 1,
-      limit = 10,
-      search = "",
-      status,
-      category_id,
-      based_type,
-      result_type,
-    } = req.query;
-
+    const { page = 1, limit = 10, search = "", category_id } = req.query;
     const offset = (page - 1) * limit;
     const where = {};
 
-    if (search) where.result_title = { [Op.like]: `%${search}%` };
-    if (status && [0, 1].includes(Number(status))) where.status = Number(status);
-    if (category_id) where.category_id = category_id;
-    if (based_type && [1, 2].includes(Number(based_type))) where.based_type = Number(based_type);
-    if (result_type && [1, 2].includes(Number(result_type))) where.result_type = Number(result_type);
+    if (search) where.course_name = { [Op.like]: `%${search}%` };
+    if (category_id) where.course_category_id = category_id;
 
-    const { rows, count } = await Result.findAndCountAll({
+    const { rows, count } = await Course.findAndCountAll({
       where,
       include: [
-        { model: Course, as: "course", attributes: ["course_id", "course_name"] },
-        { model: CourseCategory, as: "category", attributes: ["category_id", "category_name"] },
+        {
+          model: CourseCategory,
+          as: "category",
+          attributes: ["category_id", "category_name"],
+        },
       ],
       limit: parseInt(limit),
       offset: parseInt(offset),
-      order: [["result_id", "DESC"]],
+      order: [["course_id", "DESC"]],
     });
 
     res.json({
-      message: "Results fetched successfully",
+      message: "Courses fetched successfully",
       total: count,
       page: Number(page),
       totalPages: Math.ceil(count / limit),
@@ -115,102 +108,126 @@ export const getResults = async (req, res) => {
 };
 
 // single
-export const getResultById = async (req, res) => {
+export const getCourseById = async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await Result.findByPk(id, {
+    const course = await Course.findByPk(id, {
       include: [
-        { model: Course, as: "course", attributes: ["course_id", "course_name"] },
-        { model: CourseCategory, as: "category", attributes: ["category_id", "category_name"] },
+        {
+          model: CourseCategory,
+          as: "category",
+          attributes: ["category_id", "category_name"],
+        },
       ],
     });
 
-    if (!result) return res.status(404).json({ message: "Result not found" });
+    if (!course) return res.status(404).json({ message: "Course not found" });
 
     res.json({
-      message: "Result found successfully",
-      data: result,
+      message: "Course found successfully",
+      data: course,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-// update
-export const updateResult = async (req, res) => {
+// Update 
+export const updateCourse = async (req, res) => {
   try {
     const { id } = req.params;
     const {
-      result_title,
-      result_description,
-      result_date,
-      result_type,
-      based_type,
-      course_id,
-      category_id,
+      course_name,
+      course_description,
+      course_rating,
+      course_category_id,
+      course_duration,
+      course_fee,
+      course_overview,
+      course_syllabus,
+      course_study_material,
       status,
     } = req.body;
 
-    const result = await Result.findByPk(id);
-    if (!result) return res.status(404).json({ message: "Result not found" });
+    const course = await Course.findByPk(id);
+    if (!course) return res.status(404).json({ message: "Course not found" });
 
-    const duplicate = await Result.findOne({
+    const duplicate = await Course.findOne({
       where: {
-        [Op.and]: [{ result_id: { [Op.ne]: id } }, { result_title }],
+        [Op.and]: [{ course_id: { [Op.ne]: id } }, { course_name }],
       },
     });
     if (duplicate)
-      return res.status(400).json({ message: "Result title already exists" });
+      return res.status(400).json({ message: "Course name already exists" });
 
-    if (based_type == 1 && course_id) {
-      const course = await Course.findByPk(course_id);
-      if (!course) return res.status(400).json({ message: "Invalid Course ID" });
-    } else if (based_type == 2 && category_id) {
-      const category = await CourseCategory.findByPk(category_id);
-      if (!category)
-        return res.status(400).json({ message: "Invalid Category ID" });
+    if (course_category_id) {
+      const exists = await CourseCategory.findByPk(course_category_id);
+      if (!exists) return res.status(400).json({ message: "Invalid category" });
     }
 
-    if (req.file) deleteFile(result.result_file);
+    const newImage = req.files?.course_image
+      ? `${SERVER_URL}/uploads/course/${req.files.course_image[0].filename}`
+      : null;
+    const newSyllabusFile = req.files?.course_syllabus_file
+      ? `${SERVER_URL}/uploads/course/${req.files.course_syllabus_file[0].filename}`
+      : null;
+    const newQuestionsFile = req.files?.course_questions_file
+      ? `${SERVER_URL}/uploads/course/${req.files.course_questions_file[0].filename}`
+      : null;
 
-    result.result_title = result_title || result.result_title;
-    result.result_description = result_description || result.result_description;
-    result.result_date = result_date || result.result_date;
-    result.result_type = [1, 2].includes(Number(result_type))
-      ? result_type
-      : result.result_type;
-    result.based_type = [1, 2].includes(Number(based_type))
-      ? based_type
-      : result.based_type;
-    result.course_id = based_type == 1 ? course_id : null;
-    result.category_id = based_type == 2 ? category_id : null;
-    result.result_file = req.file
-      ? `${SERVER_URL}/uploads/results/${req.file.filename}`
-      : result.result_file;
-    result.status = [0, 1].includes(Number(status))
+    if (newImage && course.course_image) deleteFile(course.course_image);
+    if (newSyllabusFile && course.course_syllabus_file)
+      deleteFile(course.course_syllabus_file);
+    if (newQuestionsFile && course.course_questions_file)
+      deleteFile(course.course_questions_file);
+
+    course.course_name = course_name || course.course_name;
+    course.course_description = course_description || course.course_description;
+    course.course_rating =
+      course_rating && course_rating <= 5 ? course_rating : course.course_rating;
+    course.course_category_id = course_category_id || course.course_category_id;
+    course.course_duration = course_duration || course.course_duration;
+    course.course_fee = course_fee || course.course_fee;
+    course.course_overview = course_overview || course.course_overview;
+    course.course_syllabus = course_syllabus || course.course_syllabus;
+    course.course_study_material =
+      course_study_material || course.course_study_material;
+    course.status = [0, 1].includes(Number(status))
       ? Number(status)
-      : result.status;
-    result.updated_by = req.user?.user_id || 0;
-    result.updated_at = new Date();
+      : course.status;
+    course.updated_by = req.user?.user_id || 0;
+    course.updated_at = new Date();
 
-    await result.save();
-    res.json({ message: "Result updated successfully", data: result });
+    // 🔹 Assign new files if uploaded
+    if (newImage) course.course_image = newImage;
+    if (newSyllabusFile) course.course_syllabus_file = newSyllabusFile;
+    if (newQuestionsFile) course.course_questions_file = newQuestionsFile;
+
+    await course.save();
+
+    res.json({
+      message: "Course updated successfully",
+      data: course,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-// delete
-export const deleteResult = async (req, res) => {
+// Delete
+export const deleteCourse = async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await Result.findByPk(id);
-    if (!result) return res.status(404).json({ message: "Result not found" });
+    const course = await Course.findByPk(id);
+    if (!course) return res.status(404).json({ message: "Course not found" });
 
-    if (result.result_file) deleteFile(result.result_file);
+    deleteFile(course.course_image);
+    deleteFile(course.course_syllabus_file);
+    deleteFile(course.course_questions_file);
 
-    await result.destroy();
-    res.json({ message: "Result deleted successfully" });
+    await course.destroy();
+
+    res.json({ message: "Course deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
