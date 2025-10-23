@@ -4,7 +4,6 @@ import Course from "../models/course.model.js";
 import CourseCategory from "../models/courseCategory.model.js";
 import { deleteFile } from "../utils/fileHelper.js";
 
-
 const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
 
 // create

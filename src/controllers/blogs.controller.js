@@ -4,7 +4,6 @@ import { deleteFile } from "../utils/fileHelper.js";
 
 const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
 
-
 //  Create Blog
 export const createBlog = async (req, res) => {
   try {
