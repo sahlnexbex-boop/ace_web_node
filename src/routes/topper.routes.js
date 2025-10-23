@@ -14,8 +14,8 @@ const router = express.Router();
 const uploadTopperImage = dynamicUpload("toppers", "topper_image");
 
 router.post("/", verifyAccessToken, uploadTopperImage.single("topper_image"), createTopper);
-router.get("/", verifyAccessToken, getToppers);
-router.get("/:id", verifyAccessToken, getTopperById);
+router.get("/", getToppers);
+router.get("/:id", getTopperById);
 router.put("/:id", verifyAccessToken, uploadTopperImage.single("topper_image"), updateTopper);
 router.delete("/:id", verifyAccessToken, deleteTopper);
 

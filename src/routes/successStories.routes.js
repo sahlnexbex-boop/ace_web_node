@@ -14,8 +14,8 @@ const router = express.Router();
 const uploadThumbnail = dynamicUpload("success_stories", "thumbnail_image");
 
 router.post("/", verifyAccessToken, uploadThumbnail.single("thumbnail_image"), createSuccessStory);
-router.get("/", verifyAccessToken, getSuccessStories);
-router.get("/:id", verifyAccessToken, getSuccessStoryById);
+router.get("/", getSuccessStories);
+router.get("/:id", getSuccessStoryById);
 router.put("/:id", verifyAccessToken, uploadThumbnail.single("thumbnail_image"), updateSuccessStory);
 router.delete("/:id", verifyAccessToken, deleteSuccessStory);
 

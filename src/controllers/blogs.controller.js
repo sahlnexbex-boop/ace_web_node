@@ -1,17 +1,9 @@
 import Blog from "../models/blogs.model.js";
 import { Op } from "sequelize";
-import fs from "fs";
-import path from "path";
+import { deleteFile } from "../utils/fileHelper.js";
 
 const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
 
-// helper
-const deleteFile = (fileUrl) => {
-  if (fileUrl) {
-    const localPath = path.join(process.cwd(), fileUrl.replace(SERVER_URL, "."));
-    if (fs.existsSync(localPath)) fs.unlinkSync(localPath);
-  }
-};
 
 //  Create Blog
 export const createBlog = async (req, res) => {

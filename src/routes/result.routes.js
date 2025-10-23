@@ -14,8 +14,8 @@ const router = express.Router();
 const upload = dynamicUpload("results", "result_file");
 
 router.post("/", verifyAccessToken, upload.single("result_file"), createResult);
-router.get("/", verifyAccessToken, getResults);
-router.get("/:id", verifyAccessToken, getResultById);
+router.get("/", getResults);
+router.get("/:id", getResultById);
 router.put("/:id", verifyAccessToken, upload.single("result_file"), updateResult);
 router.delete("/:id", verifyAccessToken, deleteResult);
 

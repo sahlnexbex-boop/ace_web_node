@@ -1,17 +1,8 @@
-import Event from "../models/event.model.js";
-import fs from "fs";
-import path from "path";
 import { Op } from "sequelize";
+import Event from "../models/event.model.js";
+import { deleteFile } from "../utils/fileHelper.js";
 
 const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
-
-// helper
-const deleteFile = (filePath) => {
-  if (filePath) {
-    const localPath = path.join(process.cwd(), filePath.replace(SERVER_URL, "."));
-    if (fs.existsSync(localPath)) fs.unlinkSync(localPath);
-  }
-};
 
 // create
 export const createEvent = async (req, res) => {

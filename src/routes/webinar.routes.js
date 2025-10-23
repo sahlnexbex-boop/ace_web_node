@@ -14,8 +14,8 @@ const router = express.Router();
 const uploadWebinarImage = dynamicUpload("webinars", "webinar_image");
 
 router.post("/", verifyAccessToken, uploadWebinarImage.single("webinar_image"), createWebinar);
-router.get("/", verifyAccessToken, getWebinars);
-router.get("/:id", verifyAccessToken, getWebinarById);
+router.get("/", getWebinars);
+router.get("/:id", getWebinarById);
 router.put("/:id", verifyAccessToken, uploadWebinarImage.single("webinar_image"), updateWebinar);
 router.delete("/:id", verifyAccessToken, deleteWebinar);
 

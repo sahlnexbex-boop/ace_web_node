@@ -23,8 +23,8 @@ router.post(
   createService
 );
 
-router.get("/", verifyAccessToken, getServices);
-router.get("/:id", verifyAccessToken, getServiceById);
+router.get("/", getServices);
+router.get("/:id", getServiceById);
 
 router.put(
   "/:id",

@@ -21,6 +21,11 @@ import blogsRoutes from "./routes/blogs.routes.js";
 import eventRoutes from "./routes/event.routes.js";
 import webinarRoutes from "./routes/webinar.routes.js";
 import newsroutes from "./routes/news.routes.js";
+import affairRoutes from "./routes/currentAffair.routes.js";
+import publicationRoutes from "./routes/publication.routes.js";
+import videoClassRoutes from "./routes/videoClass.routes.js";
+import studyServiceRoutes from "./routes/studyService.routes.js";
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -50,7 +55,10 @@ app.use("/api/blogs", blogsRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/webinars", webinarRoutes);
 app.use("/api/news", newsroutes);
-
+app.use("/api/affairs", affairRoutes);
+app.use("/api/publication", publicationRoutes);
+app.use("/api/video-class", videoClassRoutes);
+app.use("/api/study-service", studyServiceRoutes);
 
 const PORT = process.env.PORT || 5000;
 
@@ -58,6 +66,6 @@ sequelize
   .sync()
   .then(() => {
     console.log("Database connected");
-    app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   })
   .catch((err) => console.error("Database connection error:", err));

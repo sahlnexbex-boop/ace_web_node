@@ -11,8 +11,8 @@ import { verifyAccessToken } from "../middlewares/verifyAccessToken.js";
 const router = express.Router();
 
 router.post("/", createEnquiry);
-router.get("/", verifyAccessToken, getEnquiries);
-router.get("/:id", verifyAccessToken, getSingleEnquiry);
+router.get("/", getEnquiries);
+router.get("/:id", getSingleEnquiry);
 router.put("/:id", verifyAccessToken, updateEnquiry);
 router.delete("/:id", verifyAccessToken, deleteEnquiry);
 

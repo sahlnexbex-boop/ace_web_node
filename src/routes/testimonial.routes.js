@@ -14,8 +14,8 @@ const router = express.Router();
 const uploadTestimonialImage = dynamicUpload("testimonials", "image_of_candidate");
 
 router.post("/", verifyAccessToken, uploadTestimonialImage.single("image_of_candidate"), createTestimonial);
-router.get("/", verifyAccessToken, getTestimonials);
-router.get("/:id", verifyAccessToken, getTestimonialById);
+router.get("/", getTestimonials);
+router.get("/:id", getTestimonialById);
 router.put("/:id", verifyAccessToken, uploadTestimonialImage.single("image_of_candidate"), updateTestimonial);
 router.delete("/:id", verifyAccessToken, deleteTestimonial);
 

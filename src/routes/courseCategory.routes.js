@@ -19,8 +19,8 @@ router.post(
   upload.single("category_image"),
   createCategory
 );
-router.get("/", verifyAccessToken, getCategories);
-router.get("/:id", verifyAccessToken, getCategoryById);
+router.get("/", getCategories);
+router.get("/:id", getCategoryById);
 router.put(
   "/:id",
   verifyAccessToken,

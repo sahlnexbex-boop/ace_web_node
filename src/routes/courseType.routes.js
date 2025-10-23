@@ -11,8 +11,8 @@ import {
 const router = express.Router();
 
 router.post("/", verifyAccessToken, createCourseType);
-router.get("/", verifyAccessToken, getCourseTypes);
-router.get("/:id", verifyAccessToken, getCourseTypeById);
+router.get("/", getCourseTypes);
+router.get("/:id", getCourseTypeById);
 router.put("/:id", verifyAccessToken, updateCourseType);
 router.delete("/:id", verifyAccessToken, deleteCourseType);
 

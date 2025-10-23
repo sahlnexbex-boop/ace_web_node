@@ -15,8 +15,8 @@ const router = express.Router();
 const upload = dynamicUpload("rank_holders", "student_photo");
 
 router.post("/", upload.single("student_photo"), createRankHolder);
-router.get("/", verifyAccessToken, getRankHolders);
-router.get("/:id", verifyAccessToken, getRankHolderById);
+router.get("/", getRankHolders);
+router.get("/:id", getRankHolderById);
 router.put("/:id", verifyAccessToken, upload.single("student_photo"), updateRankHolder);
 router.delete("/:id", verifyAccessToken, deleteRankHolder);
 

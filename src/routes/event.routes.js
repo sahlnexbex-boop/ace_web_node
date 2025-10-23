@@ -13,8 +13,8 @@ const router = express.Router();
 const uploadEventImage = dynamicUpload("events", "event_image");
 
 router.post("/", verifyAccessToken, uploadEventImage.single("event_image"), createEvent);
-router.get("/", verifyAccessToken, getEvents);
-router.get("/:id", verifyAccessToken, getEventById);
+router.get("/", getEvents);
+router.get("/:id", getEventById);
 router.put("/:id", verifyAccessToken, uploadEventImage.single("event_image"), updateEvent);
 router.delete("/:id", verifyAccessToken, deleteEvent);
 
