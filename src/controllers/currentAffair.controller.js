@@ -1,5 +1,6 @@
 import { Op } from "sequelize";
 import CurrentAffair from "../models/currentAffair.model.js";
+import CourseCategory from "../models/courseCategory.model.js";
 import { deleteFile } from "../utils/fileHelper.js";
 
 const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
@@ -24,6 +25,12 @@ export const createCurrentAffair = async (req, res) => {
       return res.status(400).json({
         message: "Missing required fields: affair_title, publishing_date, category_id",
       });
+    }
+
+    if (category_id) {
+      const categoryExists = await CourseCategory.findByPk(category_id);
+      if (!categoryExists)
+        return res.status(400).json({ message: "Invalid course_category_id" });
     }
 
     const newAffair = await CurrentAffair.create({
@@ -60,6 +67,13 @@ export const getCurrentAffairs = async (req, res) => {
 
     const { rows, count } = await CurrentAffair.findAndCountAll({
       where,
+      include: [
+        {
+          model: CourseCategory,
+          as: "category",
+          attributes: ["category_id", "category_name"],
+        },
+      ],
       limit: parseInt(limit),
       offset: parseInt(offset),
       order: [["affair_id", "DESC"]],
@@ -112,6 +126,10 @@ export const updateCurrentAffair = async (req, res) => {
 
     const affair = await CurrentAffair.findByPk(id);
     if (!affair) return res.status(404).json({ message: "Current Affair not found" });
+
+    const courseCategory = await CourseCategory.findByPk(category_id);
+    if (!courseCategory)
+      return res.status(400).json({ message: "Invalid course_category_id" }); 
 
     if (newFile && affair.affair_file) deleteFile(affair.affair_file);
 
