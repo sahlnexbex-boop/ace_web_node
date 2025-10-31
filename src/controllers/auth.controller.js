@@ -22,14 +22,17 @@ const signRefreshToken = (payload) =>
 // login
 export const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { user_name, password } = req.body;
 
-    if (!email || !password)
-      return res.status(400).json({ message: "Email and password are required" });
+    if (!user_name || !password)
+      return res.status(400).json({ message: "user_name and password are required" });
 
-    const user = await User.findOne({ where: { email } });
+    const user = await User.findOne({ where: { user_name } });
     if (!user)
       return res.status(404).json({ message: "User not found" });
+
+    if (user.status === 0)
+      return res.status(401).json({ message: "User is not Active" });
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch)

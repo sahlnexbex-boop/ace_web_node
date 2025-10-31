@@ -2,8 +2,18 @@ import { Op } from "sequelize";
 import CurrentAffair from "../models/currentAffair.model.js";
 import CourseCategory from "../models/courseCategory.model.js";
 import { deleteFile } from "../utils/fileHelper.js";
+import { fileURLToPath } from "url";
+import fs from "fs";
+import path from "path";
 
 const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
+
+const isUnsupportedFile = (mimetype) => {
+  return (
+    mimetype.startsWith("image/") ||
+    mimetype.startsWith("video/")
+  );
+};
 
 // create
 export const createCurrentAffair = async (req, res) => {
@@ -17,20 +27,27 @@ export const createCurrentAffair = async (req, res) => {
       status,
     } = req.body;
 
+    if (req.file && isUnsupportedFile(req.file.mimetype)) {
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({
+        message: "Images and video files are not supported for Current Affairs.",
+      });
+    }
+
     const affair_file = req.file
       ? `${SERVER_URL}/uploads/current_affairs/${req.file.filename}`
       : null;
 
     if (!affair_title || !publishing_date || !category_id) {
       return res.status(400).json({
-        message: "Missing required fields: affair_title, publishing_date, category_id",
+        message:
+          "Missing required fields: affair_title, publishing_date, category_id",
       });
     }
 
-    if (category_id) {
-      const categoryExists = await CourseCategory.findByPk(category_id);
-      if (!categoryExists)
-        return res.status(400).json({ message: "Invalid course_category_id" });
+    const categoryExists = await CourseCategory.findByPk(category_id);
+    if (!categoryExists) {
+      return res.status(400).json({ message: "Invalid course_category_id" });
     }
 
     const newAffair = await CurrentAffair.create({
@@ -49,6 +66,7 @@ export const createCurrentAffair = async (req, res) => {
       data: newAffair,
     });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -95,8 +113,20 @@ export const getCurrentAffairs = async (req, res) => {
 export const getCurrentAffairById = async (req, res) => {
   try {
     const { id } = req.params;
-    const affair = await CurrentAffair.findByPk(id);
-    if (!affair) return res.status(404).json({ message: "Current Affair not found" });
+
+    const affair = await CurrentAffair.findByPk(id, {
+      include: [
+        {
+          model: CourseCategory,
+          as: "category",
+          attributes: ["category_id", "category_name"],
+        },
+      ],
+    });
+
+    if (!affair) {
+      return res.status(404).json({ message: "Current Affair not found" });
+    }
 
     res.json({
       message: "Current Affair fetched successfully",
@@ -120,16 +150,24 @@ export const updateCurrentAffair = async (req, res) => {
       status,
     } = req.body;
 
+    const affair = await CurrentAffair.findByPk(id);
+    if (!affair)
+      return res.status(404).json({ message: "Current Affair not found" });
+
+    if (req.file && isUnsupportedFile(req.file.mimetype)) {
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({
+        message: "Images and video files are not supported for Current Affairs.",
+      });
+    }
+
     const newFile = req.file
       ? `${SERVER_URL}/uploads/current_affairs/${req.file.filename}`
       : null;
 
-    const affair = await CurrentAffair.findByPk(id);
-    if (!affair) return res.status(404).json({ message: "Current Affair not found" });
-
     const courseCategory = await CourseCategory.findByPk(category_id);
     if (!courseCategory)
-      return res.status(400).json({ message: "Invalid course_category_id" }); 
+      return res.status(400).json({ message: "Invalid course_category_id" });
 
     if (newFile && affair.affair_file) deleteFile(affair.affair_file);
 
@@ -138,7 +176,9 @@ export const updateCurrentAffair = async (req, res) => {
     affair.affair_price = affair_price || affair.affair_price;
     affair.publishing_date = publishing_date || affair.publishing_date;
     affair.category_id = category_id || affair.category_id;
-    affair.status = [0, 1].includes(Number(status)) ? Number(status) : affair.status;
+    affair.status = [0, 1].includes(Number(status))
+      ? Number(status)
+      : affair.status;
     affair.affair_file = newFile || affair.affair_file;
     affair.updated_by = req.user?.user_id || 0;
     affair.updated_at = new Date();
@@ -150,6 +190,7 @@ export const updateCurrentAffair = async (req, res) => {
       data: affair,
     });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };

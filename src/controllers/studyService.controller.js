@@ -66,6 +66,13 @@ export const getStudyServices = async (req, res) => {
 
     const { rows, count } = await StudyService.findAndCountAll({
       where,
+        include: [
+        {
+          model: CourseCategory,
+          as: "category",
+          attributes: ["category_id", "category_name"],
+        },
+      ],
       limit: parseInt(limit),
       offset: parseInt(offset),
       order: [["service_id", "DESC"]],
@@ -87,10 +94,25 @@ export const getStudyServices = async (req, res) => {
 export const getStudyServiceById = async (req, res) => {
   try {
     const { id } = req.params;
-    const service = await StudyService.findByPk(id);
-    if (!service) return res.status(404).json({ message: "Study Service not found" });
 
-    res.json({ message: "Study Service fetched successfully", data: service });
+    const service = await StudyService.findByPk(id, {
+      include: [
+        {
+          model: CourseCategory,
+          as: "category",
+          attributes: ["category_id", "category_name"],
+        },
+      ],
+    });
+
+    if (!service) {
+      return res.status(404).json({ message: "Study Service not found" });
+    }
+
+    res.json({
+      message: "Study Service fetched successfully",
+      data: service,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

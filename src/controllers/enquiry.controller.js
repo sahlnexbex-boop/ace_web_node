@@ -4,7 +4,7 @@ import { Op } from "sequelize";
 // create
 export const createEnquiry = async (req, res) => {
   try {
-    const {
+    let {
       cstmr_name,
       cstmr_email,
       cstmr_phone,
@@ -15,27 +15,35 @@ export const createEnquiry = async (req, res) => {
       created_by = 0,
     } = req.body;
 
-    if (!cstmr_name || !cstmr_phone || !cstmr_message)
+    if (!cstmr_name || !cstmr_phone || !cstmr_message) {
       return res.status(400).json({ message: "All fields are required" });
+    }
 
-    if (![1, 2, 3, 4].includes(Number(enquiry_type)))
+    if (![1, 2, 3, 4].includes(Number(enquiry_type))) {
       return res.status(400).json({ message: "Invalid enquiry_type (1-4 only)" });
+    }
 
-    if (enquiry_status && ![1, 2, 3].includes(Number(enquiry_status)))
+    enquiry_status = Number(enquiry_status) || 1;
+
+    if (![1, 2, 3].includes(enquiry_status)) {
       return res.status(400).json({ message: "Invalid enquiry_status (1-3 only)" });
+    }
 
     const newEnquiry = await Enquiry.create({
       cstmr_name,
       cstmr_email,
       cstmr_phone,
       cstmr_message,
-      enquiry_type,
-      enquiry_status: enquiry_status ?? 1,
+      enquiry_type: Number(enquiry_type),
+      enquiry_status,
       status: [0, 1].includes(Number(status)) ? Number(status) : 1,
       created_by,
     });
 
-    res.json({ message: "Enquiry created successfully", data: newEnquiry });
+    res.json({
+      message: "Enquiry created successfully",
+      data: newEnquiry,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

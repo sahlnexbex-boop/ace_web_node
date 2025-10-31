@@ -25,6 +25,8 @@ import affairRoutes from "./routes/currentAffair.routes.js";
 import publicationRoutes from "./routes/publication.routes.js";
 import videoClassRoutes from "./routes/videoClass.routes.js";
 import studyServiceRoutes from "./routes/studyService.routes.js";
+import carouselRoutes from "./routes/carousel.routes.js";
+import shortsRoutes from "./routes/shorts.routes.js";
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -59,6 +61,8 @@ app.use("/api/affairs", affairRoutes);
 app.use("/api/publication", publicationRoutes);
 app.use("/api/video-class", videoClassRoutes);
 app.use("/api/study-service", studyServiceRoutes);
+app.use("/api/carousel", carouselRoutes);
+app.use("/api/shorts", shortsRoutes);
 
 const PORT = process.env.PORT || 5000;
 

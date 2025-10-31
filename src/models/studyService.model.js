@@ -1,5 +1,6 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/db.js";
+import CourseCategory from "./courseCategory.model.js";
 
 const StudyService = sequelize.define(
   "study_services",
@@ -71,5 +72,10 @@ const StudyService = sequelize.define(
     timestamps: false,
   }
 );
+
+StudyService.belongsTo(CourseCategory, {
+  foreignKey: "category_id",
+  as: "category",
+});
 
 export default StudyService;

@@ -89,35 +89,58 @@ export const getRankHolders = async (req, res) => {
       course_id,
       category_id,
       year,
+      approval_status, // ✅ new filter param
     } = req.query;
 
     const offset = (page - 1) * limit;
     const where = {};
 
-    if (search)
+    // 🔹 Search filter
+    if (search) {
       where.student_name = { [Op.like]: `%${search}%` };
+    }
 
-    if (status && [0, 1].includes(Number(status)))
+    // 🔹 Status filter (0 or 1)
+    if (status && [0, 1].includes(Number(status))) {
       where.status = Number(status);
+    }
 
-    if (based_type && [1, 2].includes(Number(based_type)))
+    // 🔹 Based type filter (1 or 2)
+    if (based_type && [1, 2].includes(Number(based_type))) {
       where.based_type = Number(based_type);
+    }
 
+    // 🔹 Course, Category, and Year filters
     if (course_id) where.course_id = course_id;
     if (category_id) where.category_id = category_id;
     if (year) where.year = year;
 
+    // 🔹 Approval status filter (only supports 1, 2, 3)
+    if (approval_status && [1, 2, 3].includes(Number(approval_status))) {
+      where.approval_status = Number(approval_status);
+    }
+
+    // 🔹 Query with associations
     const { rows, count } = await RankHolder.findAndCountAll({
       where,
       include: [
-        { model: Course, as: "course", attributes: ["course_id", "course_name"] },
-        { model: CourseCategory, as: "category", attributes: ["category_id", "category_name"] },
+        {
+          model: Course,
+          as: "course",
+          attributes: ["course_id", "course_name"],
+        },
+        {
+          model: CourseCategory,
+          as: "category",
+          attributes: ["category_id", "category_name"],
+        },
       ],
       limit: parseInt(limit),
       offset: parseInt(offset),
       order: [["rank_holder_id", "DESC"]],
     });
 
+    // 🔹 Response
     res.json({
       message: "Rank Holders fetched successfully",
       total: count,
@@ -126,6 +149,7 @@ export const getRankHolders = async (req, res) => {
       data: rows,
     });
   } catch (err) {
+    console.error("Error in getRankHolders:", err);
     res.status(500).json({ error: err.message });
   }
 };

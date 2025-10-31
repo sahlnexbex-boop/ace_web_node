@@ -30,25 +30,34 @@ export const createUser = async (req, res) => {
 
 export const listUsers = async (req, res) => {
   try {
-    const { search = "", page = 1, limit = 10 } = req.query;
+    const { search = "", page = 1, limit = 10, status } = req.query;
     const offset = (page - 1) * limit;
+    const where = {};
 
-    const where = search
-      ? { [Op.or]: [{ user_name: { [Op.like]: `%${search}%` } }, { email: { [Op.like]: `%${search}%` } }] }
-      : {};
+    if (search) {
+      where[Op.or] = [
+        { user_name: { [Op.like]: `%${search}%` } },
+        { email: { [Op.like]: `%${search}%` } },
+      ];
+    }
+
+    if (status !== undefined && [0, 1].includes(Number(status))) {
+      where.status = Number(status);
+    }
 
     const users = await User.findAndCountAll({
       where,
       limit: parseInt(limit),
       offset: parseInt(offset),
-      attributes: { exclude: ["password"] }
+      attributes: { exclude: ["password"] },
+      order: [["user_id", "DESC"]],
     });
 
     res.json({
       total: users.count,
       page: parseInt(page),
       pages: Math.ceil(users.count / limit),
-      data: users.rows
+      data: users.rows,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -112,8 +121,21 @@ export const updateUser = async (req, res) => {
 
 export const deleteUser = async (req, res) => {
   try {
-    const deleted = await User.destroy({ where: { user_id: req.params.id } });
-    if (!deleted) return res.status(404).json({ message: "User not found" });
+    const totalUsers = await User.count();
+
+    if (totalUsers <= 1) {
+      return res.status(400).json({
+        message: "Cannot delete the last remaining user. At least one user must remain in the system.",
+      });
+    }
+
+    const deleted = await User.destroy({
+      where: { user_id: req.params.id },
+    });
+
+    if (!deleted)
+      return res.status(404).json({ message: "User not found" });
+
     res.json({ message: "User deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });

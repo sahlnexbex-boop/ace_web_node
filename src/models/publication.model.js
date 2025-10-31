@@ -1,5 +1,6 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/db.js";
+import CourseCategory from "./courseCategory.model.js";
 
 const Book = sequelize.define(
   "books",
@@ -81,5 +82,10 @@ const Book = sequelize.define(
     timestamps: false,
   }
 );
+
+Book.belongsTo(CourseCategory, {
+  foreignKey: "category_id",
+  as: "category",
+});
 
 export default Book;

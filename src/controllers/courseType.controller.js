@@ -33,12 +33,17 @@ export const createCourseType = async (req, res) => {
 // list all
 export const getCourseTypes = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = "" } = req.query;
+    const { page = 1, limit = 10, search = "", status } = req.query;
     const offset = (page - 1) * limit;
 
     const where = {};
+
     if (search) {
       where.type_name = { [Op.like]: `%${search}%` };
+    }
+
+    if (status !== undefined && (status === "0" || status === "1")) {
+      where.status = Number(status);
     }
 
     const { rows, count } = await CourseType.findAndCountAll({

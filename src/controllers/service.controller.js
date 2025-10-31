@@ -24,7 +24,9 @@ export const createService = async (req, res) => {
       : null;
 
     const other_images = req.files?.other_images
-      ? req.files.other_images.map((img) => `${SERVER_URL}/uploads/services/${img.filename}`)
+      ? req.files.other_images.map(
+          (img) => `${SERVER_URL}/uploads/services/${img.filename}`
+        )
       : [];
 
     const service = await Service.create({
@@ -47,7 +49,7 @@ export const createService = async (req, res) => {
   }
 };
 
-// List 
+// List
 export const getServices = async (req, res) => {
   try {
     const { page = 1, limit = 10, search = "", status, date } = req.query;
@@ -64,7 +66,10 @@ export const getServices = async (req, res) => {
     }
 
     if (date) {
-      where.service_date = { [Op.like]: `%${date}%` }; 
+      const startOfDay = new Date(`${date}T00:00:00`);
+      const endOfDay = new Date(`${date}T23:59:59`);
+
+      where.service_date = { [Op.between]: [startOfDay, endOfDay] };
     }
 
     const { rows, count } = await Service.findAndCountAll({
@@ -133,21 +138,29 @@ export const updateService = async (req, res) => {
       : null;
 
     const newOtherImages = req.files?.other_images
-      ? req.files.other_images.map((img) => `${SERVER_URL}/uploads/services/${img.filename}`)
+      ? req.files.other_images.map(
+          (img) => `${SERVER_URL}/uploads/services/${img.filename}`
+        )
       : [];
 
-    if (newServiceImage && service.service_image) deleteFile(service.service_image);
+    if (newServiceImage && service.service_image)
+      deleteFile(service.service_image);
     if (newOtherImages.length && existingOtherImages.length) {
       existingOtherImages.forEach((oldImg) => deleteFile(oldImg));
     }
 
     service.service_title = service_title || service.service_title;
-    service.service_description = service_description || service.service_description;
+    service.service_description =
+      service_description || service.service_description;
     service.service_image = newServiceImage || service.service_image;
-    service.other_images = newOtherImages.length ? newOtherImages : existingOtherImages;
+    service.other_images = newOtherImages.length
+      ? newOtherImages
+      : existingOtherImages;
     service.service_date = service_date || service.service_date;
     service.service_location = service_location || service.service_location;
-    service.status = [0, 1].includes(Number(status)) ? Number(status) : service.status;
+    service.status = [0, 1].includes(Number(status))
+      ? Number(status)
+      : service.status;
     service.updated_by = req.user?.user_id || 0;
     service.updated_at = new Date();
 

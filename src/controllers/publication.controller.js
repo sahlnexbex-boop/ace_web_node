@@ -101,14 +101,31 @@ export const getBooks = async (req, res) => {
 export const getBookById = async (req, res) => {
   try {
     const { id } = req.params;
-    const book = await Book.findByPk(id);
-    if (!book) return res.status(404).json({ message: "Book not found" });
 
-    res.json({ message: "Book fetched successfully", data: book });
+    const book = await Book.findByPk(id, {
+      include: [
+        {
+          model: CourseCategory,
+          as: "category",
+          attributes: ["category_id", "category_name"], 
+        },
+      ],
+    });
+
+    if (!book) {
+      return res.status(404).json({ message: "Book not found" });
+    }
+
+    res.json({
+      message: "Book fetched successfully",
+      data: book,
+    });
   } catch (err) {
+    console.error("Error in getBookById:", err);
     res.status(500).json({ error: err.message });
   }
 };
+
 
 // update
 export const updateBook = async (req, res) => {

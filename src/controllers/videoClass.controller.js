@@ -10,15 +10,18 @@ export const createVideoClass = async (req, res) => {
   try {
     const { class_title, date_time, video_url, category_id, status } = req.body;
 
-    const class_image = req.file ? `${SERVER_URL}/uploads/video_classes/${req.file.filename}` : null;
+    const class_image = req.file
+      ? `${SERVER_URL}/uploads/video_classes/${req.file.filename}`
+      : null;
 
     if (!class_title || !date_time || !video_url || !category_id) {
       return res.status(400).json({
-        message: "Missing required fields: class_title, date_time, video_url, category_id",
+        message:
+          "Missing required fields: class_title, date_time, video_url, category_id",
       });
     }
 
-     if (category_id) {
+    if (category_id) {
       const categoryExists = await CourseCategory.findByPk(category_id);
       if (!categoryExists)
         return res.status(400).json({ message: "Invalid course_category_id" });
@@ -34,7 +37,9 @@ export const createVideoClass = async (req, res) => {
       created_by: req.user?.user_id || 0,
     });
 
-    res.status(201).json({ message: "Video Class created successfully", data: newClass });
+    res
+      .status(201)
+      .json({ message: "Video Class created successfully", data: newClass });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -43,17 +48,31 @@ export const createVideoClass = async (req, res) => {
 // list
 export const getVideoClasses = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = "", status, category_id } = req.query;
+    const {
+      page = 1,
+      limit = 10,
+      search = "",
+      status,
+      category_id,
+    } = req.query;
 
     const offset = (page - 1) * limit;
     const where = {};
 
     if (search) where.class_title = { [Op.like]: `%${search}%` };
-    if (status && [0, 1].includes(Number(status))) where.status = Number(status);
+    if (status && [0, 1].includes(Number(status)))
+      where.status = Number(status);
     if (category_id) where.category_id = category_id;
 
     const { rows, count } = await VideoClass.findAndCountAll({
       where,
+      include: [
+        {
+          model: CourseCategory,
+          as: "category",
+          attributes: ["category_id", "category_name"],
+        },
+      ],
       limit: parseInt(limit),
       offset: parseInt(offset),
       order: [["class_id", "DESC"]],
@@ -75,10 +94,25 @@ export const getVideoClasses = async (req, res) => {
 export const getVideoClassById = async (req, res) => {
   try {
     const { id } = req.params;
-    const videoClass = await VideoClass.findByPk(id);
-    if (!videoClass) return res.status(404).json({ message: "Video Class not found" });
 
-    res.json({ message: "Video Class fetched successfully", data: videoClass });
+    const videoClass = await VideoClass.findByPk(id, {
+      include: [
+        {
+          model: CourseCategory,
+          as: "category",
+          attributes: ["category_id", "category_name"],
+        },
+      ],
+    });
+
+    if (!videoClass) {
+      return res.status(404).json({ message: "Video Class not found" });
+    }
+
+    res.json({
+      message: "Video Class fetched successfully",
+      data: videoClass,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -91,15 +125,18 @@ export const updateVideoClass = async (req, res) => {
     const { class_title, date_time, video_url, category_id, status } = req.body;
 
     const videoClass = await VideoClass.findByPk(id);
-    if (!videoClass) return res.status(404).json({ message: "Video Class not found" });
+    if (!videoClass)
+      return res.status(404).json({ message: "Video Class not found" });
 
-     if (category_id) {
+    if (category_id) {
       const categoryExists = await CourseCategory.findByPk(category_id);
       if (!categoryExists)
         return res.status(400).json({ message: "Invalid course_category_id" });
     }
 
-    const newImage = req.file ? `${SERVER_URL}/uploads/video_classes/${req.file.filename}` : null;
+    const newImage = req.file
+      ? `${SERVER_URL}/uploads/video_classes/${req.file.filename}`
+      : null;
 
     if (newImage && videoClass.class_image) deleteFile(videoClass.class_image);
 
@@ -107,7 +144,9 @@ export const updateVideoClass = async (req, res) => {
     videoClass.date_time = date_time || videoClass.date_time;
     videoClass.video_url = video_url || videoClass.video_url;
     videoClass.category_id = category_id || videoClass.category_id;
-    videoClass.status = [0, 1].includes(Number(status)) ? Number(status) : videoClass.status;
+    videoClass.status = [0, 1].includes(Number(status))
+      ? Number(status)
+      : videoClass.status;
     videoClass.class_image = newImage || videoClass.class_image;
     videoClass.updated_by = req.user?.user_id || 0;
     videoClass.updated_at = new Date();
@@ -125,7 +164,8 @@ export const deleteVideoClass = async (req, res) => {
   try {
     const { id } = req.params;
     const videoClass = await VideoClass.findByPk(id);
-    if (!videoClass) return res.status(404).json({ message: "Video Class not found" });
+    if (!videoClass)
+      return res.status(404).json({ message: "Video Class not found" });
 
     if (videoClass.class_image) deleteFile(videoClass.class_image);
 

@@ -45,13 +45,22 @@ export const createCategory = async (req, res) => {
 // list
 export const getCategories = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = "", type_id } = req.query;
+    const { page = 1, limit = 10, search = "", type_id, status } = req.query;
     const offset = (page - 1) * limit;
 
     const where = {};
 
-    if (search) where.category_name = { [Op.like]: `%${search}%` };
-    if (type_id) where.course_type_id = type_id;
+    if (search) {
+      where.category_name = { [Op.like]: `%${search}%` };
+    }
+
+    if (type_id) {
+      where.course_type_id = type_id;
+    }
+
+    if (status !== undefined && (status === "0" || status === "1")) {
+      where.status = Number(status);
+    }
 
     const { rows, count } = await CourseCategory.findAndCountAll({
       where,

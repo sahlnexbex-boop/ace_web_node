@@ -33,17 +33,76 @@ export const createCourse = async (req, res) => {
     if (course_rating && Number(course_rating) > 5)
       return res.status(400).json({ message: "Max rating is 5" });
 
-    const course_image = req.files?.course_image
-      ? `${SERVER_URL}/uploads/course/${req.files.course_image[0].filename}`
-      : null;
+    let course_image = null;
+    if (req.files?.course_image) {
+      const imageFile = req.files.course_image[0];
+      const allowedImageTypes = [
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+      ];
 
-    const course_syllabus_file = req.files?.course_syllabus_file
-      ? `${SERVER_URL}/uploads/course/${req.files.course_syllabus_file[0].filename}`
-      : null;
+      if (!allowedImageTypes.includes(imageFile.mimetype)) {
+        return res.status(400).json({
+          message:
+            "Invalid image file type for course_image. Only JPG, PNG, GIF, and WEBP are allowed.",
+        });
+      }
 
-    const course_questions_file = req.files?.course_questions_file
-      ? `${SERVER_URL}/uploads/course/${req.files.course_questions_file[0].filename}`
-      : null;
+      course_image = `${SERVER_URL}/uploads/course/${imageFile.filename}`;
+    }
+
+    let course_syllabus_file = null;
+    if (req.files?.course_syllabus_file) {
+      const syllabusFile = req.files.course_syllabus_file[0];
+      const disallowedMimeTypes = [
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+        "video/mp4",
+        "video/mpeg",
+        "video/avi",
+        "video/quicktime",
+      ];
+
+      if (disallowedMimeTypes.includes(syllabusFile.mimetype)) {
+        return res.status(400).json({
+          message:
+            "Invalid file type for course_syllabus_file. Images and videos are not allowed.",
+        });
+      }
+
+      course_syllabus_file = `${SERVER_URL}/uploads/course/${syllabusFile.filename}`;
+    }
+
+    let course_questions_file = null;
+    if (req.files?.course_questions_file) {
+      const questionsFile = req.files.course_questions_file[0];
+      const disallowedMimeTypes = [
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+        "video/mp4",
+        "video/mpeg",
+        "video/avi",
+        "video/quicktime",
+      ];
+
+      if (disallowedMimeTypes.includes(questionsFile.mimetype)) {
+        return res.status(400).json({
+          message:
+            "Invalid file type for course_questions_file. Images and videos are not allowed.",
+        });
+      }
+
+      course_questions_file = `${SERVER_URL}/uploads/course/${questionsFile.filename}`;
+    }
 
     const newCourse = await Course.create({
       course_name,
@@ -67,6 +126,7 @@ export const createCourse = async (req, res) => {
       data: newCourse,
     });
   } catch (err) {
+    console.error("Error in createCourse:", err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -74,12 +134,22 @@ export const createCourse = async (req, res) => {
 // list
 export const getCourses = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = "", category_id } = req.query;
+    const { page = 1, limit = 10, search = "", category_id, status } = req.query;
     const offset = (page - 1) * limit;
+
     const where = {};
 
-    if (search) where.course_name = { [Op.like]: `%${search}%` };
-    if (category_id) where.course_category_id = category_id;
+    if (search) {
+      where.course_name = { [Op.like]: `%${search}%` };
+    }
+
+    if (category_id) {
+      where.course_category_id = category_id;
+    }
+
+    if (status !== undefined && (status === "0" || status === "1")) {
+      where.status = Number(status);
+    }
 
     const { rows, count } = await Course.findAndCountAll({
       where,
@@ -103,6 +173,7 @@ export const getCourses = async (req, res) => {
       data: rows,
     });
   } catch (err) {
+    console.error("Error in getCourses:", err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -165,15 +236,79 @@ export const updateCourse = async (req, res) => {
       if (!exists) return res.status(400).json({ message: "Invalid category" });
     }
 
-    const newImage = req.files?.course_image
-      ? `${SERVER_URL}/uploads/course/${req.files.course_image[0].filename}`
-      : null;
-    const newSyllabusFile = req.files?.course_syllabus_file
-      ? `${SERVER_URL}/uploads/course/${req.files.course_syllabus_file[0].filename}`
-      : null;
-    const newQuestionsFile = req.files?.course_questions_file
-      ? `${SERVER_URL}/uploads/course/${req.files.course_questions_file[0].filename}`
-      : null;
+    let newImage = null;
+    let newSyllabusFile = null;
+    let newQuestionsFile = null;
+
+    if (req.files?.course_image) {
+      const imageFile = req.files.course_image[0];
+      const allowedImageTypes = [
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+      ];
+
+      if (!allowedImageTypes.includes(imageFile.mimetype)) {
+        return res
+          .status(400)
+          .json({
+            message:
+              "Invalid course_image file type. Only JPG, PNG, GIF, and WEBP are allowed.",
+          });
+      }
+
+      newImage = `${SERVER_URL}/uploads/course/${imageFile.filename}`;
+    }
+
+    if (req.files?.course_syllabus_file) {
+      const syllabusFile = req.files.course_syllabus_file[0];
+      const disallowedMimeTypes = [
+        "image/jpeg",
+        "image/png",
+        "image/jpg",
+        "image/gif",
+        "image/webp",
+        "video/mp4",
+        "video/mpeg",
+        "video/avi",
+        "video/quicktime",
+      ];
+
+      if (disallowedMimeTypes.includes(syllabusFile.mimetype)) {
+        return res.status(400).json({
+          message:
+            "Invalid course_syllabus_file type. Images and videos are not allowed.",
+        });
+      }
+
+      newSyllabusFile = `${SERVER_URL}/uploads/course/${syllabusFile.filename}`;
+    }
+
+    if (req.files?.course_questions_file) {
+      const questionsFile = req.files.course_questions_file[0];
+      const disallowedMimeTypes = [
+        "image/jpeg",
+        "image/png",
+        "image/jpg",
+        "image/gif",
+        "image/webp",
+        "video/mp4",
+        "video/mpeg",
+        "video/avi",
+        "video/quicktime",
+      ];
+
+      if (disallowedMimeTypes.includes(questionsFile.mimetype)) {
+        return res.status(400).json({
+          message:
+            "Invalid course_questions_file type. Images and videos are not allowed.",
+        });
+      }
+
+      newQuestionsFile = `${SERVER_URL}/uploads/course/${questionsFile.filename}`;
+    }
 
     if (newImage && course.course_image) deleteFile(course.course_image);
     if (newSyllabusFile && course.course_syllabus_file)
@@ -198,7 +333,6 @@ export const updateCourse = async (req, res) => {
     course.updated_by = req.user?.user_id || 0;
     course.updated_at = new Date();
 
-    // 🔹 Assign new files if uploaded
     if (newImage) course.course_image = newImage;
     if (newSyllabusFile) course.course_syllabus_file = newSyllabusFile;
     if (newQuestionsFile) course.course_questions_file = newQuestionsFile;
@@ -210,6 +344,7 @@ export const updateCourse = async (req, res) => {
       data: course,
     });
   } catch (err) {
+    console.error("Error in updateCourse:", err);
     res.status(500).json({ error: err.message });
   }
 };

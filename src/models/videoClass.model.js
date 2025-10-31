@@ -1,5 +1,6 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/db.js";
+import CourseCategory from "./courseCategory.model.js";
 
 const VideoClass = sequelize.define(
   "video_classes",
@@ -66,5 +67,10 @@ const VideoClass = sequelize.define(
     timestamps: false,
   }
 );
+
+VideoClass.belongsTo(CourseCategory, {
+  foreignKey: "category_id",
+  as: "category",
+});
 
 export default VideoClass;
