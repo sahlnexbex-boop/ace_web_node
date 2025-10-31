@@ -8,7 +8,14 @@ const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
 export const createCarousel = async (req, res) => {
   try {
     const { carousel_title, carousel_sec_title, carousel_description, status } = req.body;
-    const carousel_file = req.file ? `${SERVER_URL}/uploads/carousel/${req.file.filename}` : null;
+
+    const carousel_file = req.files?.carousel_file?.[0]
+      ? `${SERVER_URL}/uploads/carousel/${req.files.carousel_file[0].filename}`
+      : null;
+
+    const carousel_mobile_file = req.files?.carousel_mobile_file?.[0]
+      ? `${SERVER_URL}/uploads/carousel/${req.files.carousel_mobile_file[0].filename}`
+      : null;
 
     if (!carousel_title) {
       return res.status(400).json({ message: "Missing required field: carousel_title" });
@@ -19,11 +26,15 @@ export const createCarousel = async (req, res) => {
       carousel_sec_title,
       carousel_description,
       carousel_file,
+      carousel_mobile_file,
       status: [0, 1].includes(Number(status)) ? Number(status) : 1,
       created_by: req.user?.user_id || 0,
     });
 
-    res.status(201).json({ message: "Carousel created successfully", data: newCarousel });
+    res.status(201).json({
+      message: "Carousel created successfully",
+      data: newCarousel,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -76,24 +87,37 @@ export const updateCarousel = async (req, res) => {
   try {
     const { id } = req.params;
     const { carousel_title, carousel_sec_title, carousel_description, status } = req.body;
-    const newFile = req.file ? `${SERVER_URL}/uploads/carousel/${req.file.filename}` : null;
+
+    const newFile = req.files?.carousel_file?.[0]
+      ? `${SERVER_URL}/uploads/carousel/${req.files.carousel_file[0].filename}`
+      : null;
+
+    const newMobileFile = req.files?.carousel_mobile_file?.[0]
+      ? `${SERVER_URL}/uploads/carousel/${req.files.carousel_mobile_file[0].filename}`
+      : null;
 
     const carousel = await Carousel.findByPk(id);
     if (!carousel) return res.status(404).json({ message: "Carousel not found" });
 
+    // delete old files if new ones uploaded
     if (newFile && carousel.carousel_file) deleteFile(carousel.carousel_file);
+    if (newMobileFile && carousel.carousel_mobile_file) deleteFile(carousel.carousel_mobile_file);
 
     carousel.carousel_title = carousel_title || carousel.carousel_title;
     carousel.carousel_sec_title = carousel_sec_title || carousel.carousel_sec_title;
     carousel.carousel_description = carousel_description || carousel.carousel_description;
     carousel.status = [0, 1].includes(Number(status)) ? Number(status) : carousel.status;
     carousel.carousel_file = newFile || carousel.carousel_file;
+    carousel.carousel_mobile_file = newMobileFile || carousel.carousel_mobile_file;
     carousel.updated_by = req.user?.user_id || 0;
     carousel.updated_at = new Date();
 
     await carousel.save();
 
-    res.json({ message: "Carousel updated successfully", data: carousel });
+    res.json({
+      message: "Carousel updated successfully",
+      data: carousel,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -107,6 +131,8 @@ export const deleteCarousel = async (req, res) => {
     if (!carousel) return res.status(404).json({ message: "Carousel not found" });
 
     if (carousel.carousel_file) deleteFile(carousel.carousel_file);
+    if (carousel.carousel_mobile_file) deleteFile(carousel.carousel_mobile_file);
+
     await carousel.destroy();
 
     res.json({ message: "Carousel deleted successfully" });

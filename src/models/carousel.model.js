@@ -31,6 +31,11 @@ const Carousel = sequelize.define(
       allowNull: true,
       comment: "File (Image or Video)",
     },
+    carousel_mobile_file: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+      comment: "Mobile File (Image or Video)",
+    },
     status: {
       type: DataTypes.TINYINT,
       allowNull: false,
