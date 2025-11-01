@@ -11,15 +11,16 @@ import {
 
 const router = express.Router();
 
-const upload = dynamicUpload("services", "service_image");
+const { upload, compressFile } = dynamicUpload("services", "service_image");
 
 router.post(
   "/",
+  verifyAccessToken,
   upload.fields([
     { name: "service_image", maxCount: 1 },
     { name: "other_images", maxCount: 10 },
   ]),
-  verifyAccessToken,
+  compressFile,
   createService
 );
 
@@ -28,11 +29,12 @@ router.get("/:id", getServiceById);
 
 router.put(
   "/:id",
+  verifyAccessToken,
   upload.fields([
     { name: "service_image", maxCount: 1 },
     { name: "other_images", maxCount: 10 },
   ]),
-  verifyAccessToken,
+  compressFile,
   updateService
 );
 

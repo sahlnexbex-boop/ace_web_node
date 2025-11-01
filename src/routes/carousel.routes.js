@@ -10,18 +10,18 @@ import { dynamicUpload } from "../middlewares/upload.js";
 import { verifyAccessToken } from "../middlewares/verifyAccessToken.js";
 
 const router = express.Router();
-const upload = dynamicUpload("carousel", "carousel_file");
+const {upload, compressFile} = dynamicUpload("carousel", "carousel_file");
 
 router.post("/", verifyAccessToken,  upload.fields([
     { name: "carousel_file", maxCount: 1 },
     { name: "carousel_mobile_file", maxCount: 1 },
-  ]), createCarousel);
+  ]), compressFile, createCarousel);
 router.get("/", getAllCarousels);
 router.get("/:id", getCarouselById);
 router.put("/:id", verifyAccessToken,  upload.fields([
     { name: "carousel_file", maxCount: 1 },
     { name: "carousel_mobile_file", maxCount: 1 },
-  ]), updateCarousel);
+  ]), compressFile, updateCarousel);
 router.delete("/:id", verifyAccessToken, deleteCarousel);
 
 export default router;

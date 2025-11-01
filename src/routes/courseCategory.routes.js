@@ -11,12 +11,13 @@ import {
 
 const router = express.Router();
 
-const upload = dynamicUpload("course_category", "category_image");
+const { upload, compressFile, } = dynamicUpload("course_category", "category_image");
 
 router.post(
   "/",
   verifyAccessToken,
   upload.single("category_image"),
+  compressFile,
   createCategory
 );
 router.get("/", getCategories);
@@ -25,6 +26,7 @@ router.put(
   "/:id",
   verifyAccessToken,
   upload.single("category_image"),
+  compressFile,
   updateCategory
 );
 router.delete("/:id", verifyAccessToken, deleteCategory);

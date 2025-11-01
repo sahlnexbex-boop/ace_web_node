@@ -1,6 +1,7 @@
 import multer from "multer";
 import fs from "fs";
 import path from "path";
+import sharp from "sharp";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -22,12 +23,35 @@ export const dynamicUpload = (folderName, fieldName) => {
     },
   });
 
-  const fileFilter = (req, file, cb) => {
-    if (!file.originalname) {
-      return cb(new Error("File not valid"), false);
+  const upload = multer({ storage });
+
+  // Middleware wrapper for compression
+  const compressFile = async (req, res, next) => {
+    if (!req.file) return next();
+
+    const filePath = req.file.path;
+    const ext = path.extname(filePath).toLowerCase();
+
+    try {
+      if ([".jpg", ".jpeg", ".png", ".webp"].includes(ext)) {
+        const compressedPath = filePath.replace(ext, `.compressed${ext}`);
+
+        await sharp(filePath)
+          .jpeg({ quality: 85 }) // adjust 80–90 for optimal balance
+          .png({ compressionLevel: 8 })
+          .toFile(compressedPath);
+
+        // Replace original with compressed
+        fs.renameSync(compressedPath, filePath);
+      }
+
+      // For PDFs or other formats: skip compression
+      next();
+    } catch (error) {
+      console.error("File compression error:", error);
+      next();
     }
-    cb(null, true);
   };
 
-  return multer({ storage, fileFilter });
+  return { upload, compressFile };
 };

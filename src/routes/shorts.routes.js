@@ -10,12 +10,12 @@ import { dynamicUpload } from "../middlewares/upload.js";
 import { verifyAccessToken } from "../middlewares/verifyAccessToken.js";
 
 const router = express.Router();
-const uploadShorts = dynamicUpload("shorts", "shorts_file");
+const {upload, compressFile} = dynamicUpload("shorts", "shorts_file");
 
-router.post("/", verifyAccessToken, uploadShorts.single("shorts_file"), createShort);
+router.post("/", verifyAccessToken, upload.single("shorts_file"), compressFile, createShort);
 router.get("/", getAllShorts);
 router.get("/:id", getShortById);
-router.put("/:id", verifyAccessToken, uploadShorts.single("shorts_file"), updateShort);
+router.put("/:id", verifyAccessToken, upload.single("shorts_file"), compressFile, updateShort);
 router.delete("/:id", verifyAccessToken, deleteShort);
 
 export default router;

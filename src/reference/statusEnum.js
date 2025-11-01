@@ -30,3 +30,8 @@ const rank_holders_approval_status = [
     3 = "rejected",
 ]
 
+const based_type = [
+    1 = "Course",
+    2 = "Category",
+]
+

@@ -10,12 +10,12 @@ import { verifyAccessToken } from "../middlewares/verifyAccessToken.js";
 import { dynamicUpload } from "../middlewares/upload.js";
 
 const router = express.Router();
-const uploadBlogImage = dynamicUpload("blogs", "blog_image");
+const { upload, compressFile, } = dynamicUpload("blogs", "blog_image");
 
-router.post("/", verifyAccessToken, uploadBlogImage.single("blog_image"), createBlog);
+router.post("/", verifyAccessToken, upload.single("blog_image"), compressFile, createBlog);
 router.get("/", getBlogs);
 router.get("/:id", getBlogById);
-router.put("/:id", verifyAccessToken, uploadBlogImage.single("blog_image"), updateBlog);
+router.put("/:id", verifyAccessToken, upload.single("blog_image"), compressFile, updateBlog);
 router.delete("/:id", verifyAccessToken, deleteBlog);
 
 export default router;

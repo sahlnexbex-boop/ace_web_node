@@ -43,14 +43,11 @@ export const createCourse = async (req, res) => {
         "image/gif",
         "image/webp",
       ];
-
       if (!allowedImageTypes.includes(imageFile.mimetype)) {
         return res.status(400).json({
-          message:
-            "Invalid image file type for course_image. Only JPG, PNG, GIF, and WEBP are allowed.",
+          message: "Invalid image type. Only JPG, PNG, GIF, WEBP allowed.",
         });
       }
-
       course_image = `${SERVER_URL}/uploads/course/${imageFile.filename}`;
     }
 
@@ -68,14 +65,11 @@ export const createCourse = async (req, res) => {
         "video/avi",
         "video/quicktime",
       ];
-
       if (disallowedMimeTypes.includes(syllabusFile.mimetype)) {
         return res.status(400).json({
-          message:
-            "Invalid file type for course_syllabus_file. Images and videos are not allowed.",
+          message: "Invalid file type for syllabus file. No images or videos allowed.",
         });
       }
-
       course_syllabus_file = `${SERVER_URL}/uploads/course/${syllabusFile.filename}`;
     }
 
@@ -93,14 +87,11 @@ export const createCourse = async (req, res) => {
         "video/avi",
         "video/quicktime",
       ];
-
       if (disallowedMimeTypes.includes(questionsFile.mimetype)) {
         return res.status(400).json({
-          message:
-            "Invalid file type for course_questions_file. Images and videos are not allowed.",
+          message: "Invalid file type for questions file. No images or videos allowed.",
         });
       }
-
       course_questions_file = `${SERVER_URL}/uploads/course/${questionsFile.filename}`;
     }
 
@@ -120,6 +111,11 @@ export const createCourse = async (req, res) => {
       status: [0, 1].includes(Number(status)) ? Number(status) : 1,
       created_by: req.user?.user_id || 0,
     });
+
+    await CourseCategory.increment(
+      { total_courses: 1 },
+      { where: { category_id: course_category_id } }
+    );
 
     res.status(201).json({
       message: "Course created successfully",
@@ -356,14 +352,23 @@ export const deleteCourse = async (req, res) => {
     const course = await Course.findByPk(id);
     if (!course) return res.status(404).json({ message: "Course not found" });
 
+    const categoryId = course.course_category_id;
+
     deleteFile(course.course_image);
     deleteFile(course.course_syllabus_file);
     deleteFile(course.course_questions_file);
 
     await course.destroy();
 
+    const category = await CourseCategory.findByPk(categoryId);
+    if (category) {
+      const newCount = Math.max((category.total_courses || 0) - 1, 0);
+      await category.update({ total_courses: newCount });
+    }
+
     res.json({ message: "Course deleted successfully" });
   } catch (err) {
+    console.error("Error in deleteCourse:", err);
     res.status(500).json({ error: err.message });
   }
 };

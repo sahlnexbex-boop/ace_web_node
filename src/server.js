@@ -5,6 +5,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 import sequelize from "./config/db.js";
+import { runSeeder } from "./seeders/seeder.js";
 import userRoutes from "./routes/user.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import courseTypeRoutes from "./routes/courseType.routes.js";
@@ -68,8 +69,12 @@ const PORT = process.env.PORT || 5000;
 
 sequelize
   .sync()
-  .then(() => {
-    console.log("Database connected");
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  .then(async () => {
+    console.log(" Database connected");
+
+    await runSeeder();
+
+    app.listen(PORT, () => console.log(` Server running on port ${PORT}`));
   })
-  .catch((err) => console.error("Database connection error:", err));
+  .catch((err) => console.error(" Database connection error:", err));
+

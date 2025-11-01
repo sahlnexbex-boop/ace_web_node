@@ -12,12 +12,12 @@ import {
 
 const router = express.Router();
 
-const upload = dynamicUpload("rank_holders", "student_photo");
+const { upload, compressFile} = dynamicUpload("rank_holders", "student_photo");
 
-router.post("/", upload.single("student_photo"), createRankHolder);
+router.post("/", upload.single("student_photo"), compressFile, createRankHolder);
 router.get("/", getRankHolders);
 router.get("/:id", getRankHolderById);
-router.put("/:id", verifyAccessToken, upload.single("student_photo"), updateRankHolder);
+router.put("/:id", verifyAccessToken, upload.single("student_photo"), compressFile, updateRankHolder);
 router.delete("/:id", verifyAccessToken, deleteRankHolder);
 
 export default router;

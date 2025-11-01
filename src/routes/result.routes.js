@@ -11,12 +11,12 @@ import { dynamicUpload } from "../middlewares/upload.js";
 
 const router = express.Router();
 
-const upload = dynamicUpload("results", "result_file");
+const { upload, compressFile, } = dynamicUpload("results", "result_file");
 
-router.post("/", verifyAccessToken, upload.single("result_file"), createResult);
+router.post("/", verifyAccessToken, upload.single("result_file"), compressFile, createResult);
 router.get("/", getResults);
 router.get("/:id", getResultById);
-router.put("/:id", verifyAccessToken, upload.single("result_file"), updateResult);
+router.put("/:id", verifyAccessToken, upload.single("result_file"), compressFile, updateResult);
 router.delete("/:id", verifyAccessToken, deleteResult);
 
 export default router;

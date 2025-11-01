@@ -11,17 +11,17 @@ import { dynamicUpload } from "../middlewares/upload.js";
 
 const router = express.Router();
 
-const upload = dynamicUpload("course", "course_file");
+const { upload, compressFile, } = dynamicUpload("course", "course_file");
 const courseUpload = upload.fields([
   { name: "course_image", maxCount: 1 },
   { name: "course_syllabus_file", maxCount: 1 },
   { name: "course_questions_file", maxCount: 1 },
 ]);
 
-router.post("/", verifyAccessToken, courseUpload, createCourse);
+router.post("/", verifyAccessToken, courseUpload, compressFile, createCourse);
 router.get("/", getCourses);
 router.get("/:id", getCourseById);
-router.put("/:id", verifyAccessToken, courseUpload, updateCourse);
+router.put("/:id", verifyAccessToken, courseUpload, compressFile, updateCourse);
 router.delete("/:id", verifyAccessToken, deleteCourse);
 
 export default router;
