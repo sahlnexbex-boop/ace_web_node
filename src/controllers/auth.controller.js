@@ -117,23 +117,48 @@ export const verifyOTP = async (req, res) => {
 // reset pass
 export const resetPassword = async (req, res) => {
   try {
+    const authHeader = req.headers["authorization"];
     const { email, newPassword } = req.body;
 
+    if (!authHeader)
+      return res.status(401).json({ message: "Authorization token missing" });
+
     if (!email || !newPassword)
-      return res.status(400).json({ message: "Email and new password required" });
+      return res
+        .status(400)
+        .json({ message: "Email and new password required" });
+
+    const token = authHeader.split(" ")[1];
+    if (!token)
+      return res.status(401).json({ message: "Invalid token format" });
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, JWT_ACCESS_SECRET);
+    } catch (err) {
+      return res.status(401).json({ message: "Invalid or expired token" });
+    }
+
+    const tokenEmail = decoded.email;
+    if (!tokenEmail)
+      return res.status(400).json({ message: "Token missing email data" });
+
+    if (tokenEmail !== email)
+      return res
+        .status(403)
+        .json({ message: "Email mismatch — unauthorized request" });
 
     const user = await User.findOne({ where: { email } });
     if (!user)
       return res.status(404).json({ message: "User not found" });
 
-    const hashed = await bcrypt.hash(newPassword, 10);
-    user.password = hashed;
+    user.password = newPassword;
     user.updated_at = new Date();
     await user.save();
 
     res.json({ message: "Password reset successful" });
   } catch (err) {
-    console.error(err);
+    console.error("Reset password error:", err);
     res.status(500).json({ error: err.message });
   }
 };
