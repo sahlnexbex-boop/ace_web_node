@@ -20,11 +20,10 @@ export const runSeeder = async () => {
       return;
     }
 
-    const hashedPassword = await bcrypt.hash(defaultUser.password, 10);
+    // const hashedPassword = await bcrypt.hash(defaultUser.password, 10);
 
     await User.create({
       ...defaultUser,
-      password: hashedPassword,
     });
 
     console.log(" Default admin user created successfully!");
