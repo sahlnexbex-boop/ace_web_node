@@ -55,7 +55,7 @@ const Result = sequelize.define(
       type: DataTypes.INTEGER.UNSIGNED,
       allowNull: true,
       references: {
-        model: "course_categories",
+        model: "course_category",
         key: "category_id",
       },
     },
