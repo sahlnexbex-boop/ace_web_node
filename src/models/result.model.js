@@ -7,7 +7,7 @@ const Result = sequelize.define(
   "Result",
   {
     result_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       autoIncrement: true,
       primaryKey: true,
     },
@@ -44,7 +44,7 @@ const Result = sequelize.define(
       },
     },
     course_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       allowNull: true,
       references: {
         model: "courses",
@@ -52,7 +52,7 @@ const Result = sequelize.define(
       },
     },
     category_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       allowNull: true,
       references: {
         model: "course_categories",

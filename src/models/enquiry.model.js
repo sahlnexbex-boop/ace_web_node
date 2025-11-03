@@ -5,7 +5,7 @@ const Enquiry = sequelize.define(
   "enquiries",
   {
     enquiry_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       primaryKey: true,
       autoIncrement: true,
     },

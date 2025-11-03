@@ -20,15 +20,15 @@ const RankHolder = sequelize.define(
       allowNull: false,
     },
     based_type: {
-      type: DataTypes.INTEGER, // 1 => course, 2 => category
+      type: DataTypes.INTEGER, 
       allowNull: false,
     },
     course_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       allowNull: true,
     },
     category_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       allowNull: true,
     },
     exam_name: {

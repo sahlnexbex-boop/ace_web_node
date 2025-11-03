@@ -5,7 +5,7 @@ const Shorts = sequelize.define(
   "shorts",
   {
     shorts_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       primaryKey: true,
       autoIncrement: true,
       allowNull: false,

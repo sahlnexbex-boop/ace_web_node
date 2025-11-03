@@ -5,7 +5,7 @@ const Testimonial = sequelize.define(
   "Testimonial",
   {
     testimonial_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       autoIncrement: true,
       primaryKey: true,
     },

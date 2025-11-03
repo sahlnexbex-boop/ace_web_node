@@ -6,14 +6,14 @@ const Course = sequelize.define(
   "Course",
   {
     course_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       autoIncrement: true,
       primaryKey: true,
     },
     course_name: { type: DataTypes.STRING, allowNull: false },
     course_description: { type: DataTypes.STRING },
     course_rating: { type: DataTypes.FLOAT, defaultValue: 0 },
-    course_category_id: { type: DataTypes.INTEGER, allowNull: false },
+    course_category_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
     course_duration: { type: DataTypes.INTEGER },
     course_fee: { type: DataTypes.INTEGER },
     course_overview: { type: DataTypes.STRING(1000) },

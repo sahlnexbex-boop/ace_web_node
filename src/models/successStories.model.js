@@ -6,7 +6,7 @@ const SuccessStory = sequelize.define(
   "SuccessStory",
   {
     stories_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       autoIncrement: true,
       primaryKey: true,
     },
@@ -27,7 +27,7 @@ const SuccessStory = sequelize.define(
       allowNull: true,
     },
     course_category_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       allowNull: true,
     },
     thumbnail_image: {

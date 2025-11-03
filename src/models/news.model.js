@@ -3,7 +3,7 @@ import sequelize from "../config/db.js";
 
 const News = sequelize.define("news", {
   news_id: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.INTEGER.UNSIGNED,
     primaryKey: true,
     autoIncrement: true,
     allowNull: false,

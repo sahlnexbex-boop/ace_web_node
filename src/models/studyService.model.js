@@ -6,7 +6,7 @@ const StudyService = sequelize.define(
   "study_services",
   {
     service_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       primaryKey: true,
       autoIncrement: true,
       allowNull: false,
@@ -23,7 +23,7 @@ const StudyService = sequelize.define(
       comment: "Description",
     },
     category_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
       comment: "Category ID",
     },

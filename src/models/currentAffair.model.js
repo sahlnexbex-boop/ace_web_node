@@ -6,7 +6,7 @@ const CurrentAffair = sequelize.define(
   "current_affairs",
   {
     affair_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       primaryKey: true,
       autoIncrement: true,
       allowNull: false,
@@ -33,7 +33,7 @@ const CurrentAffair = sequelize.define(
       comment: "Publishing Date",
     },
     category_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
       comment: "Category ID",
     },

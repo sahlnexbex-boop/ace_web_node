@@ -6,7 +6,7 @@ const VideoClass = sequelize.define(
   "video_classes",
   {
     class_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       primaryKey: true,
       autoIncrement: true,
       allowNull: false,
@@ -33,7 +33,7 @@ const VideoClass = sequelize.define(
       comment: "Video URL",
     },
     category_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
       comment: "Category ID",
     },

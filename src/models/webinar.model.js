@@ -6,7 +6,7 @@ const Webinar = sequelize.define(
   "Webinar",
   {
     webinar_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       autoIncrement: true,
       primaryKey: true,
     },
@@ -27,7 +27,7 @@ const Webinar = sequelize.define(
       allowNull: true,
     },
     course_category_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       allowNull: true,
     },
     speaker_name: {

@@ -7,7 +7,7 @@ const Topper = sequelize.define(
   "Topper",
   {
     topper_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       autoIncrement: true,
       primaryKey: true,
     },
@@ -36,11 +36,11 @@ const Topper = sequelize.define(
       allowNull: false,
     },
     course_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       allowNull: true,
     },
     category_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       allowNull: true,
     },
     status: {
