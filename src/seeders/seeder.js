@@ -1,4 +1,3 @@
-import bcrypt from "bcrypt";
 import User from "../models/user.model.js";
 
 export const runSeeder = async () => {
@@ -26,7 +25,7 @@ export const runSeeder = async () => {
       ...defaultUser,
     });
 
-    console.log(" Default admin user created successfully!");
+    console.log(" Default admin user created successfully!", ...defaultUser);
   } catch (error) {
     console.error(" Seeder error:", error);
   }
