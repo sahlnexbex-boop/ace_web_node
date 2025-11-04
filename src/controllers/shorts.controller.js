@@ -10,8 +10,8 @@ export const createShort = async (req, res) => {
     const { shorts_title, status, shorts_link } = req.body;
     const shorts_file = req.file ? `${SERVER_URL}/uploads/shorts/${req.file.filename}` : null;
 
-    if (!shorts_title) {
-      return res.status(400).json({ message: "Missing required field: shorts_title" });
+    if (!shorts_file) {
+      return res.status(400).json({ message: "Missing required field: shorts_file" });
     }
 
     const newShort = await Shorts.create({

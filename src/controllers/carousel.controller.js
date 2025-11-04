@@ -17,8 +17,8 @@ export const createCarousel = async (req, res) => {
       ? `${SERVER_URL}/uploads/carousel/${req.files.carousel_mobile_file[0].filename}`
       : null;
 
-    if (!carousel_title) {
-      return res.status(400).json({ message: "Missing required field: carousel_title" });
+    if (!carousel_file) {
+      return res.status(400).json({ message: "Missing required field: carousel_file" });
     }
 
     const newCarousel = await Carousel.create({
@@ -103,9 +103,9 @@ export const updateCarousel = async (req, res) => {
     if (newFile && carousel.carousel_file) deleteFile(carousel.carousel_file);
     if (newMobileFile && carousel.carousel_mobile_file) deleteFile(carousel.carousel_mobile_file);
 
-    carousel.carousel_title = carousel_title || carousel.carousel_title;
-    carousel.carousel_sec_title = carousel_sec_title || carousel.carousel_sec_title;
-    carousel.carousel_description = carousel_description || carousel.carousel_description;
+    carousel.carousel_title = carousel_title || null;
+    carousel.carousel_sec_title = carousel_sec_title || null;
+    carousel.carousel_description = carousel_description || null;
     carousel.status = [0, 1].includes(Number(status)) ? Number(status) : carousel.status;
     carousel.carousel_file = newFile || carousel.carousel_file;
     carousel.carousel_mobile_file = newMobileFile || carousel.carousel_mobile_file;
