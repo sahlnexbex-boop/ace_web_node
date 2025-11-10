@@ -4,14 +4,26 @@ import { deleteFile } from "../utils/fileHelper.js";
 
 const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
 
+const isUnsupportedFile = (mimetype) => {
+  return !mimetype.startsWith("image/");
+};
+
 // create
 export const createShort = async (req, res) => {
   try {
     const { shorts_title, status, shorts_link } = req.body;
-    const shorts_file = req.file ? `${SERVER_URL}/uploads/shorts/${req.file.filename}` : null;
+    const shorts_file = req.file
+      ? `${SERVER_URL}/uploads/shorts/${req.file.filename}`
+      : null;
 
     if (!shorts_file) {
-      return res.status(400).json({ message: "Missing required field: shorts_file" });
+      return res
+        .status(400)
+        .json({ message: "Missing required field: shorts_file" });
+    }
+
+     if (isUnsupportedFile(req.file.mimetype)) {
+      return res.status(400).json({ message: "Invalid file type. Videos only allowed" });
     }
 
     const newShort = await Shorts.create({
@@ -22,7 +34,9 @@ export const createShort = async (req, res) => {
       created_by: req.user?.user_id || 0,
     });
 
-    res.status(201).json({ message: "Short created successfully", data: newShort });
+    res
+      .status(201)
+      .json({ message: "Short created successfully", data: newShort });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -36,7 +50,8 @@ export const getAllShorts = async (req, res) => {
     const where = {};
 
     if (search) where.shorts_title = { [Op.like]: `%${search}%` };
-    if (status && [0, 1].includes(Number(status))) where.status = Number(status);
+    if (status && [0, 1].includes(Number(status)))
+      where.status = Number(status);
 
     const { rows, count } = await Shorts.findAndCountAll({
       where,
@@ -75,16 +90,24 @@ export const updateShort = async (req, res) => {
   try {
     const { id } = req.params;
     const { shorts_title, status, shorts_link } = req.body;
-    const newFile = req.file ? `${SERVER_URL}/uploads/shorts/${req.file.filename}` : null;
+    const newFile = req.file
+      ? `${SERVER_URL}/uploads/shorts/${req.file.filename}`
+      : null;
 
     const short = await Shorts.findByPk(id);
     if (!short) return res.status(404).json({ message: "Short not found" });
 
     if (newFile && short.shorts_file) deleteFile(short.shorts_file);
 
+    if(newFile && isUnsupportedFile(req.file.mimetype)) {
+      return res.status(400).json({ message: "Invalid file type. Videos only allowed" });
+    }
+
     short.shorts_title = shorts_title || short.shorts_title;
-    short.short_link = shorts_link || short.short_link;
-    short.status = [0, 1].includes(Number(status)) ? Number(status) : short.status;
+    short.shorts_link = shorts_link || short.short_link;
+    short.status = [0, 1].includes(Number(status))
+      ? Number(status)
+      : short.status;
     short.shorts_file = newFile || short.shorts_file;
     short.updated_by = req.user?.user_id || 0;
     short.updated_at = new Date();

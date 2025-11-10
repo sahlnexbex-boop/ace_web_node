@@ -5,6 +5,14 @@ import { deleteFile } from "../utils/fileHelper.js";
 
 const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
 
+const bookUnsupportedFile = (mimetype) => {
+  return !mimetype.startsWith("image/");
+};
+
+const bookFileUnsupportedFile = (mimetype) => {
+  return mimetype.startsWith("image/") || mimetype.startsWith("video/");
+};
+
 // create
 export const createBook = async (req, res) => {
   try {
@@ -30,6 +38,18 @@ export const createBook = async (req, res) => {
       return res.status(400).json({
         message: "Missing required fields: book_title, category_id",
       });
+    }
+
+    if (bookUnsupportedFile(req.files?.book_image[0].mimetype)) {
+      return res
+        .status(400)
+        .json({ message: "Invalid book image type. Only images are allowed." });
+    }
+
+    if (bookFileUnsupportedFile(req.files?.book_file[0].mimetype)) {
+      return res
+        .status(400)
+        .json({ message: "Invalid file type. not allowed images and videos" });
     }
 
     if (category_id) {
@@ -107,7 +127,7 @@ export const getBookById = async (req, res) => {
         {
           model: CourseCategory,
           as: "category",
-          attributes: ["category_id", "category_name"], 
+          attributes: ["category_id", "category_name"],
         },
       ],
     });
@@ -126,7 +146,6 @@ export const getBookById = async (req, res) => {
   }
 };
 
-
 // update
 export const updateBook = async (req, res) => {
   try {
@@ -144,7 +163,7 @@ export const updateBook = async (req, res) => {
     const book = await Book.findByPk(id);
     if (!book) return res.status(404).json({ message: "Book not found" });
 
-     if (category_id) {
+    if (category_id) {
       const categoryExists = await CourseCategory.findByPk(category_id);
       if (!categoryExists)
         return res.status(400).json({ message: "Invalid course_category_id" });
@@ -157,6 +176,31 @@ export const updateBook = async (req, res) => {
     const newFile = req.files?.book_file
       ? `${SERVER_URL}/uploads/books/${req.files.book_file[0].filename}`
       : null;
+
+    if(newImage && bookUnsupportedFile(req.files.book_image[0].mimetype)) {
+      return res
+        .status(400)
+        .json({ message: "Invalid book image type. Only images are allowed." });
+    }
+
+    if(newFile && bookFileUnsupportedFile(req.files.book_file[0].mimetype)) {
+      return res
+        .status(400)
+        .json({ message: "Invalid file type. not allowed images and videos" });
+    }
+
+
+    // if (bookUnsupportedFile(req.files.book_image[0].mimetype)) {
+    //   return res
+    //     .status(400)
+    //     .json({ message: "Invalid book image type. Only images are allowed." });
+    // }
+
+    // if (bookFileUnsupportedFile(req.files.book_file[0].mimetype)) {
+    //   return res
+    //     .status(400)
+    //     .json({ message: "Invalid file type. not allowed images and videos" });
+    // }
 
     if (newImage && book.book_image) deleteFile(book.book_image);
     if (newFile && book.book_file) deleteFile(book.book_file);

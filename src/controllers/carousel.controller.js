@@ -4,22 +4,37 @@ import { deleteFile } from "../utils/fileHelper.js";
 
 const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
 
+// helper
+const isUnsupportedFile = (mimetype) => {
+  return !(
+    mimetype.startsWith("image/") ||
+    mimetype.startsWith("video/")
+  );
+};
+
 // create
 export const createCarousel = async (req, res) => {
   try {
     const { carousel_title, carousel_sec_title, carousel_description, status } = req.body;
 
-    const carousel_file = req.files?.carousel_file?.[0]
-      ? `${SERVER_URL}/uploads/carousel/${req.files.carousel_file[0].filename}`
-      : null;
+    const file1 = req.files?.carousel_file?.[0];
+    const file2 = req.files?.carousel_mobile_file?.[0];
 
-    const carousel_mobile_file = req.files?.carousel_mobile_file?.[0]
-      ? `${SERVER_URL}/uploads/carousel/${req.files.carousel_mobile_file[0].filename}`
-      : null;
-
-    if (!carousel_file) {
+    if (!file1) {
       return res.status(400).json({ message: "Missing required field: carousel_file" });
     }
+    if (isUnsupportedFile(req.files.carousel_file.mimetype)) {
+      return res.status(400).json({ message: "Invalid file type. Only images and videos are allowed." });
+    }
+
+    if (file2 && isUnsupportedFile(req.files.carousel_mobile_file.mimetype)) {
+      return res.status(400).json({ message: "Invalid mobile file type. Only images and videos are allowed." });
+    }
+
+    const carousel_file = `${SERVER_URL}/uploads/carousel/${file1.filename}`;
+    const carousel_mobile_file = file2
+      ? `${SERVER_URL}/uploads/carousel/${file2.filename}`
+      : null;
 
     const newCarousel = await Carousel.create({
       carousel_title,
@@ -88,12 +103,23 @@ export const updateCarousel = async (req, res) => {
     const { id } = req.params;
     const { carousel_title, carousel_sec_title, carousel_description, status } = req.body;
 
-    const newFile = req.files?.carousel_file?.[0]
-      ? `${SERVER_URL}/uploads/carousel/${req.files.carousel_file[0].filename}`
+    const file1 = req.files?.carousel_file?.[0];
+    const file2 = req.files?.carousel_mobile_file?.[0];
+
+    if (file1 && isUnsupportedFile(req.files.carousel_file.mimetype)) {
+      return res.status(400).json({ message: "Invalid file type. Only images and videos are allowed." });
+    }
+
+    if (file2 && isUnsupportedFile(req.files.carousel_mobile_file.mimetype)) {
+      return res.status(400).json({ message: "Invalid mobile file type. Only images and videos are allowed." });
+    }
+
+    const newFile = file1
+      ? `${SERVER_URL}/uploads/carousel/${file1.filename}`
       : null;
 
-    const newMobileFile = req.files?.carousel_mobile_file?.[0]
-      ? `${SERVER_URL}/uploads/carousel/${req.files.carousel_mobile_file[0].filename}`
+    const newMobileFile = file2
+      ? `${SERVER_URL}/uploads/carousel/${file2.filename}`
       : null;
 
     const carousel = await Carousel.findByPk(id);

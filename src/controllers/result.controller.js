@@ -6,6 +6,10 @@ import { deleteFile } from "../utils/fileHelper.js";
 
 const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
 
+const isUnsupportedFile = (mimetype) => {
+  return mimetype.startsWith("image/") || mimetype.startsWith("video/");
+};
+
 // create
 export const createResult = async (req, res) => {
   try {
@@ -24,22 +28,37 @@ export const createResult = async (req, res) => {
       return res.status(400).json({ message: "Required fields are missing" });
 
     if (![1, 2].includes(Number(result_type)))
-      return res.status(400).json({ message: "Invalid result_type. Only 1 or 2 allowed." });
+      return res
+        .status(400)
+        .json({ message: "Invalid result_type. Only 1 or 2 allowed." });
     if (![1, 2].includes(Number(based_type)))
-      return res.status(400).json({ message: "Invalid based_type. Only 1 or 2 allowed." });
+      return res
+        .status(400)
+        .json({ message: "Invalid based_type. Only 1 or 2 allowed." });
 
     if (based_type == 1) {
-      if (!course_id) return res.status(400).json({ message: "course_id required" });
+      if (!course_id)
+        return res.status(400).json({ message: "course_id required" });
       const course = await Course.findByPk(course_id);
-      if (!course) return res.status(400).json({ message: "Invalid course_id" });
+      if (!course)
+        return res.status(400).json({ message: "Invalid course_id" });
     } else {
-      if (!category_id) return res.status(400).json({ message: "category_id required" });
+      if (!category_id)
+        return res.status(400).json({ message: "category_id required" });
       const category = await CourseCategory.findByPk(category_id);
-      if (!category) return res.status(400).json({ message: "Invalid category_id" });
+      if (!category)
+        return res.status(400).json({ message: "Invalid category_id" });
+    }
+
+    if (isUnsupportedFile(req.file.mimetype)) {
+      return res
+        .status(400)
+        .json({ message: "Invalid file type. images & video not allowed" });
     }
 
     const exists = await Result.findOne({ where: { result_title } });
-    if (exists) return res.status(400).json({ message: "Result title already exists" });
+    if (exists)
+      return res.status(400).json({ message: "Result title already exists" });
 
     const result_file = req.file
       ? `${SERVER_URL}/uploads/results/${req.file.filename}`
@@ -84,16 +103,27 @@ export const getResults = async (req, res) => {
     const where = {};
 
     if (search) where.result_title = { [Op.like]: `%${search}%` };
-    if (status && [0, 1].includes(Number(status))) where.status = Number(status);
+    if (status && [0, 1].includes(Number(status)))
+      where.status = Number(status);
     if (category_id) where.category_id = category_id;
-    if (based_type && [1, 2].includes(Number(based_type))) where.based_type = Number(based_type);
-    if (result_type && [1, 2].includes(Number(result_type))) where.result_type = Number(result_type);
+    if (based_type && [1, 2].includes(Number(based_type)))
+      where.based_type = Number(based_type);
+    if (result_type && [1, 2].includes(Number(result_type)))
+      where.result_type = Number(result_type);
 
     const { rows, count } = await Result.findAndCountAll({
       where,
       include: [
-        { model: Course, as: "course", attributes: ["course_id", "course_name"] },
-        { model: CourseCategory, as: "category", attributes: ["category_id", "category_name"] },
+        {
+          model: Course,
+          as: "course",
+          attributes: ["course_id", "course_name"],
+        },
+        {
+          model: CourseCategory,
+          as: "category",
+          attributes: ["category_id", "category_name"],
+        },
       ],
       limit: parseInt(limit),
       offset: parseInt(offset),
@@ -118,8 +148,16 @@ export const getResultById = async (req, res) => {
     const { id } = req.params;
     const result = await Result.findByPk(id, {
       include: [
-        { model: Course, as: "course", attributes: ["course_id", "course_name"] },
-        { model: CourseCategory, as: "category", attributes: ["category_id", "category_name"] },
+        {
+          model: Course,
+          as: "course",
+          attributes: ["course_id", "course_name"],
+        },
+        {
+          model: CourseCategory,
+          as: "category",
+          attributes: ["category_id", "category_name"],
+        },
       ],
     });
 
@@ -157,14 +195,24 @@ export const updateResult = async (req, res) => {
 
     if (based_type == 1) {
       const course = await Course.findByPk(course_id);
-      if (!course) return res.status(400).json({ message: "Invalid course_id" });
+      if (!course)
+        return res.status(400).json({ message: "Invalid course_id" });
     } else if (based_type == 2) {
       const category = await CourseCategory.findByPk(category_id);
-      if (!category) return res.status(400).json({ message: "Invalid category_id" });
+      if (!category)
+        return res.status(400).json({ message: "Invalid category_id" });
     }
 
-    const newFile = req.file ? `${SERVER_URL}/uploads/results/${req.file.filename}` : null;
+    const newFile = req.file
+      ? `${SERVER_URL}/uploads/results/${req.file.filename}`
+      : null;
     if (newFile && result.result_file) deleteFile(result.result_file);
+
+    if (newFile && isUnsupportedFile(req.file.mimetype)) {
+      return res
+        .status(400)
+        .json({ message: "Invalid file type. images & video not allowed" });
+    }
 
     result.result_title = result_title || result.result_title;
     result.result_description = result_description || result.result_description;

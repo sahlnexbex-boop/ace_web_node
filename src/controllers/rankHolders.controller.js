@@ -6,6 +6,10 @@ import { deleteFile } from "../utils/fileHelper.js";
 
 const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
 
+const isUnsupportedFile = (mimetype) => {
+  return !mimetype.startsWith("image/");
+};
+
 // create
 export const createRankHolder = async (req, res) => {
   try {
@@ -28,9 +32,16 @@ export const createRankHolder = async (req, res) => {
     const student_photo = req.file
       ? `${SERVER_URL}/uploads/rank_holders/${req.file.filename}`
       : null;
-    console.log("photo", student_photo);
 
-    const topper_image = req.file ? `${SERVER_URL}/uploads/toppers/${req.file.filename}` : null;
+    if (isUnsupportedFile(req.file.mimetype)) {
+      return res
+        .status(400)
+        .json({ message: "Invalid file type. Only images are allowed." });
+    }
+
+    // const topper_image = req.file
+    //   ? `${SERVER_URL}/uploads/toppers/${req.file.filename}`
+    //   : null;
 
     if (!student_name || !student_rank || !based_type)
       return res.status(400).json({ message: "Missing required fields" });
@@ -39,19 +50,29 @@ export const createRankHolder = async (req, res) => {
       return res.status(400).json({ message: "Invalid based_type value" });
 
     if (based_type == 1) {
-      if (!course_id) return res.status(400).json({ message: "Course ID required for based_type=1" });
+      if (!course_id)
+        return res
+          .status(400)
+          .json({ message: "Course ID required for based_type=1" });
       const courseExists = await Course.findByPk(course_id);
-      if (!courseExists) return res.status(400).json({ message: "Invalid course_id" });
+      if (!courseExists)
+        return res.status(400).json({ message: "Invalid course_id" });
     }
 
     if (based_type == 2) {
-      if (!category_id) return res.status(400).json({ message: "Category ID required for based_type=2" });
+      if (!category_id)
+        return res
+          .status(400)
+          .json({ message: "Category ID required for based_type=2" });
       const categoryExists = await CourseCategory.findByPk(category_id);
-      if (!categoryExists) return res.status(400).json({ message: "Invalid category_id" });
+      if (!categoryExists)
+        return res.status(400).json({ message: "Invalid category_id" });
     }
 
     if (approval_status && ![1, 2, 3].includes(Number(approval_status)))
-      return res.status(400).json({ message: "Invalid approval_status (allowed 1, 2, 3)" });
+      return res
+        .status(400)
+        .json({ message: "Invalid approval_status (allowed 1, 2, 3)" });
 
     const rankHolder = await RankHolder.create({
       student_name,
@@ -71,7 +92,9 @@ export const createRankHolder = async (req, res) => {
       created_by: req.user?.user_id || 0,
     });
 
-    res.status(201).json({ message: "Rank Holder created successfully", data: rankHolder });
+    res
+      .status(201)
+      .json({ message: "Rank Holder created successfully", data: rankHolder });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -160,11 +183,20 @@ export const getRankHolderById = async (req, res) => {
     const { id } = req.params;
     const rankHolder = await RankHolder.findByPk(id, {
       include: [
-        { model: Course, as: "course", attributes: ["course_id", "course_name"] },
-        { model: CourseCategory, as: "category", attributes: ["category_id", "category_name"] },
+        {
+          model: Course,
+          as: "course",
+          attributes: ["course_id", "course_name"],
+        },
+        {
+          model: CourseCategory,
+          as: "category",
+          attributes: ["category_id", "category_name"],
+        },
       ],
     });
-    if (!rankHolder) return res.status(404).json({ message: "Rank Holder not found" });
+    if (!rankHolder)
+      return res.status(404).json({ message: "Rank Holder not found" });
     res.json({ message: "Rank Holder fetched successfully", data: rankHolder });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -195,26 +227,36 @@ export const updateRankHolder = async (req, res) => {
       ? `${SERVER_URL}/uploads/rank_holders/${req.file.filename}`
       : null;
 
+    if(newPhoto && isUnsupportedFile(req.file.mimetype)) {
+      return res.status(400).json({ message: "Invalid file type. Only images are allowed." });
+    }
+
     const rankHolder = await RankHolder.findByPk(id);
-    if (!rankHolder) return res.status(404).json({ message: "Rank Holder not found" });
+    if (!rankHolder)
+      return res.status(404).json({ message: "Rank Holder not found" });
 
     if (based_type && ![1, 2].includes(Number(based_type)))
       return res.status(400).json({ message: "Invalid based_type value" });
 
     if (based_type == 1 && course_id) {
       const courseExists = await Course.findByPk(course_id);
-      if (!courseExists) return res.status(400).json({ message: "Invalid course_id" });
+      if (!courseExists)
+        return res.status(400).json({ message: "Invalid course_id" });
     }
 
     if (based_type == 2 && category_id) {
       const categoryExists = await CourseCategory.findByPk(category_id);
-      if (!categoryExists) return res.status(400).json({ message: "Invalid category_id" });
+      if (!categoryExists)
+        return res.status(400).json({ message: "Invalid category_id" });
     }
 
     if (approval_status && ![1, 2, 3].includes(Number(approval_status)))
-      return res.status(400).json({ message: "Invalid approval_status (allowed 1, 2, 3)" });
+      return res
+        .status(400)
+        .json({ message: "Invalid approval_status (allowed 1, 2, 3)" });
 
-    if (newPhoto && rankHolder.student_photo) deleteFile(rankHolder.student_photo);
+    if (newPhoto && rankHolder.student_photo)
+      deleteFile(rankHolder.student_photo);
 
     rankHolder.student_name = student_name || rankHolder.student_name;
     rankHolder.student_rank = student_rank || rankHolder.student_rank;
@@ -227,7 +269,9 @@ export const updateRankHolder = async (req, res) => {
     rankHolder.place = place || rankHolder.place;
     rankHolder.phone_no = phone_no || rankHolder.phone_no;
     rankHolder.approval_status = approval_status || rankHolder.approval_status;
-    rankHolder.status = [0, 1].includes(Number(status)) ? Number(status) : rankHolder.status;
+    rankHolder.status = [0, 1].includes(Number(status))
+      ? Number(status)
+      : rankHolder.status;
     rankHolder.year = year || rankHolder.year;
     rankHolder.student_photo = newPhoto || rankHolder.student_photo;
     rankHolder.updated_by = req.user?.user_id || 0;
@@ -245,7 +289,8 @@ export const deleteRankHolder = async (req, res) => {
   try {
     const { id } = req.params;
     const rankHolder = await RankHolder.findByPk(id);
-    if (!rankHolder) return res.status(404).json({ message: "Rank Holder not found" });
+    if (!rankHolder)
+      return res.status(404).json({ message: "Rank Holder not found" });
 
     if (rankHolder.student_photo) deleteFile(rankHolder.student_photo);
 
