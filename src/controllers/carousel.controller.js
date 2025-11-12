@@ -23,11 +23,11 @@ export const createCarousel = async (req, res) => {
     if (!file1) {
       return res.status(400).json({ message: "Missing required field: carousel_file" });
     }
-    if (isUnsupportedFile(req.files.carousel_file.mimetype)) {
+    if (isUnsupportedFile(req.files.carousel_file[0].mimetype)) {
       return res.status(400).json({ message: "Invalid file type. Only images and videos are allowed." });
     }
 
-    if (file2 && isUnsupportedFile(req.files.carousel_mobile_file.mimetype)) {
+    if (file2 && isUnsupportedFile(req.files.carousel_mobile_file[0].mimetype)) {
       return res.status(400).json({ message: "Invalid mobile file type. Only images and videos are allowed." });
     }
 
