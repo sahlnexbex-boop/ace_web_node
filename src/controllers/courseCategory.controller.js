@@ -6,22 +6,40 @@ import CourseType from "../models/courseType.model.js";
 
 const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
 
+// helper
+const isUnsupportedFile = (mimetype) => {
+  return !mimetype.startsWith("image/");
+};
+
 // create
 export const createCategory = async (req, res) => {
   try {
-    const { category_name, category_description, course_type_id, status } = req.body;
+    const { category_name, category_description, course_type_id, status } =
+      req.body;
 
     if (!category_name || !course_type_id) {
-      return res.status(400).json({ message: "Category name and course type are required" });
+      return res
+        .status(400)
+        .json({ message: "Category name and course type are required" });
     }
 
     const exists = await CourseCategory.findOne({ where: { category_name } });
-    if (exists) return res.status(400).json({ message: "Category already exists" });
+    if (exists)
+      return res.status(400).json({ message: "Category already exists" });
 
     const courseTypeExists = await CourseType.findByPk(course_type_id);
-    if (!courseTypeExists) return res.status(400).json({ message: "Invalid course type ID" });
+    if (!courseTypeExists)
+      return res.status(400).json({ message: "Invalid course type ID" });
 
-    const image = req.file ? `${SERVER_URL}/uploads/course_category/${req.file.filename}` : null;
+    const image = req.file
+      ? `${SERVER_URL}/uploads/course_category/${req.file.filename}`
+      : null;
+
+    if (isUnsupportedFile(req.file.mimetype)) {
+      return res
+        .status(400)
+        .json({ message: "Invalid file type. Only images are allowed." });
+    }
 
     const category = await CourseCategory.create({
       category_name,
@@ -94,11 +112,16 @@ export const getCategoryById = async (req, res) => {
     const { id } = req.params;
     const category = await CourseCategory.findByPk(id, {
       include: [
-        { model: CourseType, as: "courseType", attributes: ["type_id", "type_name"] },
+        {
+          model: CourseType,
+          as: "courseType",
+          attributes: ["type_id", "type_name"],
+        },
       ],
     });
 
-    if (!category) return res.status(404).json({ message: "Category not found" });
+    if (!category)
+      return res.status(404).json({ message: "Category not found" });
 
     res.json({
       message: "Category found successfully",
@@ -113,31 +136,51 @@ export const getCategoryById = async (req, res) => {
 export const updateCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    const { category_name, category_description, course_type_id, status } = req.body;
+    const { category_name, category_description, course_type_id, status } =
+      req.body;
+    const newImage = req.file
+      ? `${SERVER_URL}/uploads/course_category/${req.file.filename}`
+      : null;
 
     const category = await CourseCategory.findByPk(id);
-    if (!category) return res.status(404).json({ message: "Category not found" });
+    if (!category)
+      return res.status(404).json({ message: "Category not found" });
 
     const duplicate = await CourseCategory.findOne({
       where: {
         [Op.and]: [{ category_id: { [Op.ne]: id } }, { category_name }],
       },
     });
-    if (duplicate) return res.status(400).json({ message: "Category name already exists" });
+    if (duplicate)
+      return res.status(400).json({ message: "Category name already exists" });
 
     if (course_type_id) {
       const typeExists = await CourseType.findByPk(course_type_id);
-      if (!typeExists) return res.status(400).json({ message: "Invalid course type ID" });
+      if (!typeExists)
+        return res.status(400).json({ message: "Invalid course type ID" });
     }
 
-    if (req.file) {
-      // Delete old image
+    if (newImage && category.category_image)
       deleteFile(category.category_image);
-      category.category_image = `${SERVER_URL}/uploads/course_category/${req.file.filename}`;
+
+    if (newImage && isUnsupportedFile(req.file.mimetype)) {
+      return res
+        .status(400)
+        .json({ message: "Invalid file type. Only images are allowed." });
     }
+
+    // if (req.file) {
+    //   deleteFile(category.category_image);
+    //   category.category_image = `${SERVER_URL}/uploads/course_category/${req.file.filename}`;
+    // }
+
+    // if(category.category_image && isUnsupportedFile(req.file.mimetype)) {
+    //   return res.status(400).json({ message: "Invalid file type. Only images are allowed." });
+    // }
 
     category.category_name = category_name || category.category_name;
-    category.category_description = category_description || category.category_description;
+    category.category_description =
+      category_description || category.category_description;
     category.course_type_id = course_type_id || category.course_type_id;
     category.status = [0, 1].includes(Number(status))
       ? Number(status)
@@ -163,7 +206,8 @@ export const deleteCategory = async (req, res) => {
     const { id } = req.params;
 
     const category = await CourseCategory.findByPk(id);
-    if (!category) return res.status(404).json({ message: "Category not found" });
+    if (!category)
+      return res.status(404).json({ message: "Category not found" });
 
     // Delete image file
     deleteFile(category.category_image);

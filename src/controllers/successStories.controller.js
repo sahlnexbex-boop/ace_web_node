@@ -5,6 +5,10 @@ import { deleteFile } from "../utils/fileHelper.js";
 
 const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
 
+const isUnsupportedFile = (mimetype) => {
+  return !mimetype.startsWith("image/");
+};
+
 // Create
 export const createSuccessStory = async (req, res) => {
   try {
@@ -17,6 +21,11 @@ export const createSuccessStory = async (req, res) => {
       youtube_video_link,
       status,
     } = req.body;
+
+    if (isUnsupportedFile(req.file.mimetype)) {
+      return res.status(400).json({ message: "Invalid file type. Only images are allowed." });
+    }
+
     const thumbnail_image = req.file
       ? `${SERVER_URL}/uploads/success_stories/${req.file.filename}`
       : null;
@@ -141,9 +150,14 @@ export const updateSuccessStory = async (req, res) => {
       youtube_video_link,
       status,
     } = req.body;
+
     const newThumbnail = req.file
       ? `${SERVER_URL}/uploads/success_stories/${req.file.filename}`
       : null;
+
+    if(newThumbnail && isUnsupportedFile(req.file.mimetype)) {
+      return res.status(400).json({ message: "Invalid file type. Only images are allowed." }); 
+    }
 
     const story = await SuccessStory.findByPk(id);
     if (!story)

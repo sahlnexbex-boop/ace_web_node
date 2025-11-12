@@ -11,7 +11,7 @@ import {
 
 const router = express.Router();
 
-const { upload, compressFile } = dynamicUpload("services", "service_image");
+const { upload,handleUpload } = dynamicUpload("services", "service_image");
 
 router.post(
   "/",
@@ -20,7 +20,7 @@ router.post(
     { name: "service_image", maxCount: 1 },
     { name: "other_images", maxCount: 10 },
   ]),
-  compressFile,
+ handleUpload,
   createService
 );
 
@@ -34,7 +34,7 @@ router.put(
     { name: "service_image", maxCount: 1 },
     { name: "other_images", maxCount: 10 },
   ]),
-  compressFile,
+ handleUpload,
   updateService
 );
 

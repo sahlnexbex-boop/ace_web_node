@@ -4,14 +4,33 @@ import { deleteFile } from "../utils/fileHelper.js";
 
 const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
 
+const isUnsupportedFile = (mimetype) => {
+  return !mimetype.startsWith("image/");
+};
+
 //  Create Blog
 export const createBlog = async (req, res) => {
   try {
-    const { blog_title, blog_author, blog_content, publishing_date, tags, status } = req.body;
-    const blog_image = req.file ? `${SERVER_URL}/uploads/blogs/${req.file.filename}` : null;
+    const {
+      blog_title,
+      blog_author,
+      blog_content,
+      publishing_date,
+      tags,
+      status,
+    } = req.body;
+    const blog_image = req.file
+      ? `${SERVER_URL}/uploads/blogs/${req.file.filename}`
+      : null;
 
     if (!blog_title || !blog_author || !blog_content || !publishing_date) {
       return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    if (isUnsupportedFile(req.file.mimetype)) {
+      return res
+        .status(400)
+        .json({ message: "Invalid file type. Images only allowed" });
     }
 
     const parsedTags = tags ? JSON.parse(tags) : null;
@@ -83,11 +102,26 @@ export const getBlogById = async (req, res) => {
 export const updateBlog = async (req, res) => {
   try {
     const { id } = req.params;
-    const { blog_title, blog_author, blog_content, publishing_date, tags, status } = req.body;
-    const newImage = req.file ? `${SERVER_URL}/uploads/blogs/${req.file.filename}` : null;
+    const {
+      blog_title,
+      blog_author,
+      blog_content,
+      publishing_date,
+      tags,
+      status,
+    } = req.body;
+    const newImage = req.file
+      ? `${SERVER_URL}/uploads/blogs/${req.file.filename}`
+      : null;
 
     const blog = await Blog.findByPk(id);
     if (!blog) return res.status(404).json({ message: "Blog not found" });
+
+    if (newImage && isUnsupportedFile(req.file.mimetype)) {
+      return res
+        .status(400)
+        .json({ message: "Invalid file type. Only images are allowed." });
+    }
 
     if (newImage && blog.blog_image) deleteFile(blog.blog_image);
 
@@ -96,7 +130,9 @@ export const updateBlog = async (req, res) => {
     blog.blog_content = blog_content || blog.blog_content;
     blog.publishing_date = publishing_date || blog.publishing_date;
     blog.tags = tags ? JSON.parse(tags) : blog.tags;
-    blog.status = [0, 1].includes(Number(status)) ? Number(status) : blog.status;
+    blog.status = [0, 1].includes(Number(status))
+      ? Number(status)
+      : blog.status;
     blog.blog_image = newImage || blog.blog_image;
     blog.updated_by = req.user?.user_id || 0;
 

@@ -4,18 +4,47 @@ import { deleteFile } from "../utils/fileHelper.js";
 
 const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
 
+// helper for checking files
+const isUnsupportedFile = (mimetype) => {
+  // allow only images
+  return !mimetype.startsWith("image/");
+};
+
 // create
 export const createEvent = async (req, res) => {
   try {
-    const { event_title, event_description, event_type, event_location, date_time, status } = req.body;
-    const event_image = req.file ? `${SERVER_URL}/uploads/events/${req.file.filename}` : null;
+    const {
+      event_title,
+      event_description,
+      event_type,
+      event_location,
+      date_time,
+      status,
+    } = req.body;
+    const event_image = req.file
+      ? `${SERVER_URL}/uploads/events/${req.file.filename}`
+      : null;
 
-    if (!event_title || !event_description || !event_type || !event_location || !date_time) {
+    if (req.file && isUnsupportedFile(req.file.mimetype)) {
+      return res.status(400).json({
+        message: "Invalid file type. Only image files are allowed.",
+      });
+    }
+
+    if (
+      !event_title ||
+      !event_description ||
+      !event_type ||
+      !event_location ||
+      !date_time
+    ) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
     if (![1, 2].includes(Number(event_type))) {
-      return res.status(400).json({ message: "Invalid event_type. Only 1 or 2 are allowed." });
+      return res
+        .status(400)
+        .json({ message: "Invalid event_type. Only 1 or 2 are allowed." });
     }
 
     const event = await Event.create({
@@ -29,7 +58,9 @@ export const createEvent = async (req, res) => {
       created_by: req.user?.user_id || 0,
     });
 
-    res.status(201).json({ message: "Event created successfully", data: event });
+    res
+      .status(201)
+      .json({ message: "Event created successfully", data: event });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -44,8 +75,10 @@ export const getEvents = async (req, res) => {
     const where = {};
 
     if (search) where.event_title = { [Op.like]: `%${search}%` };
-    if (status && [0, 1].includes(Number(status))) where.status = Number(status);
-    if (event_type && [1, 2].includes(Number(event_type))) where.event_type = Number(event_type);
+    if (status && [0, 1].includes(Number(status)))
+      where.status = Number(status);
+    if (event_type && [1, 2].includes(Number(event_type)))
+      where.event_type = Number(event_type);
 
     const { rows, count } = await Event.findAndCountAll({
       where,
@@ -82,14 +115,31 @@ export const getEventById = async (req, res) => {
 export const updateEvent = async (req, res) => {
   try {
     const { id } = req.params;
-    const { event_title, event_description, event_type, event_location, date_time, status } = req.body;
-    const newImage = req.file ? `${SERVER_URL}/uploads/events/${req.file.filename}` : null;
+    const {
+      event_title,
+      event_description,
+      event_type,
+      event_location,
+      date_time,
+      status,
+    } = req.body;
+    const newImage = req.file
+      ? `${SERVER_URL}/uploads/events/${req.file.filename}`
+      : null;
 
     const event = await Event.findByPk(id);
     if (!event) return res.status(404).json({ message: "Event not found" });
 
     if (event_type && ![1, 2].includes(Number(event_type))) {
-      return res.status(400).json({ message: "Invalid event_type. Only 1 or 2 are allowed." });
+      return res
+        .status(400)
+        .json({ message: "Invalid event_type. Only 1 or 2 are allowed." });
+    }
+
+    if (newImage && isUnsupportedFile(req.file.mimetype)) {
+      return res.status(400).json({
+        message: "Invalid file type. Only image files are allowed.",
+      });
     }
 
     if (newImage && event.event_image) deleteFile(event.event_image);
@@ -99,7 +149,9 @@ export const updateEvent = async (req, res) => {
     event.event_type = event_type ? Number(event_type) : event.event_type;
     event.event_location = event_location || event.event_location;
     event.date_time = date_time || event.date_time;
-    event.status = [0, 1].includes(Number(status)) ? Number(status) : event.status;
+    event.status = [0, 1].includes(Number(status))
+      ? Number(status)
+      : event.status;
     event.event_image = newImage || event.event_image;
     event.updated_by = req.user?.user_id || 0;
     event.updated_at = new Date();

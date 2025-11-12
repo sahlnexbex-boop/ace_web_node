@@ -7,51 +7,98 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export const dynamicUpload = (folderName, fieldName) => {
-  const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
+/**
+ * Universal dynamic upload + compression
+ * Supports .single(), .array(), and .fields()
+ */
+export const dynamicUpload = (folderName, fieldNames) => {
+  const storage = multer.memoryStorage();
+  const upload = multer({
+    storage,
+    limits: { fileSize: 15 * 1024 * 1024 }, // 15 MB limit
+  });
+
+  const handleUpload = async (req, res, next) => {
+    try {
       const uploadPath = path.join(process.cwd(), `uploads/${folderName}`);
       if (!fs.existsSync(uploadPath)) {
         fs.mkdirSync(uploadPath, { recursive: true });
       }
-      cb(null, uploadPath);
-    },
-    filename: (req, file, cb) => {
-      const ext = path.extname(file.originalname);
-      const random = Math.random().toString(36).substring(2, 8);
-      cb(null, `${fieldName}-${Date.now()}-${random}${ext}`);
-    },
-  });
 
-  const upload = multer({ storage });
+      // 🧠 Helper function to compress and save one file
+      const processFile = async (file) => {
+        const ext = path.extname(file.originalname).toLowerCase();
+        const random = Math.random().toString(36).substring(2, 8);
+        const filename = `${file.fieldname}-${Date.now()}-${random}${ext}`;
+        const filepath = path.join(uploadPath, filename);
 
-  // Middleware wrapper for compression
-  const compressFile = async (req, res, next) => {
-    if (!req.file) return next();
+        // Skip non-images
+        if (![".jpg", ".jpeg", ".png", ".webp"].includes(ext)) {
+          fs.writeFileSync(filepath, file.buffer);
+          return { ...file, filename, path: filepath };
+        }
 
-    const filePath = req.file.path;
-    const ext = path.extname(filePath).toLowerCase();
+        let sharpInstance = sharp(file.buffer);
+        switch (ext) {
+          case ".jpg":
+          case ".jpeg":
+            sharpInstance = sharpInstance.jpeg({ quality: 85 });
+            break;
+          case ".png":
+            sharpInstance = sharpInstance.png({ compressionLevel: 8 });
+            break;
+          case ".webp":
+            sharpInstance = sharpInstance.webp({ quality: 85 });
+            break;
+        }
 
-    try {
-      if ([".jpg", ".jpeg", ".png", ".webp"].includes(ext)) {
-        const compressedPath = filePath.replace(ext, `.compressed${ext}`);
+        const compressedBuffer = await sharpInstance.toBuffer();
+        fs.writeFileSync(filepath, compressedBuffer);
 
-        await sharp(filePath)
-          .jpeg({ quality: 85 }) // adjust 80–90 for optimal balance
-          .png({ compressionLevel: 8 })
-          .toFile(compressedPath);
+        return { ...file, filename, path: filepath };
+      };
 
-        // Replace original with compressed
-        fs.renameSync(compressedPath, filePath);
+      // 🧩 Normalize multer’s file structure
+      let files = [];
+
+      if (req.file) {
+        // upload.single()
+        files = [req.file];
+      } else if (Array.isArray(req.files)) {
+        // upload.array()
+        files = req.files;
+      } else if (typeof req.files === "object" && Object.keys(req.files).length > 0) {
+        // upload.fields()
+        files = Object.values(req.files).flat();
       }
 
-      // For PDFs or other formats: skip compression
+      // Process all uploaded files
+      if (files.length > 0) {
+        const processedResults = await Promise.all(files.map(processFile));
+
+        // Reassign processed results back to req.files / req.file
+        if (req.file) {
+          req.file = processedResults[0];
+        } else if (Array.isArray(req.files)) {
+          req.files = processedResults;
+        } else {
+          // rebuild fields structure
+          const grouped = {};
+          for (const f of processedResults) {
+            if (!grouped[f.fieldname]) grouped[f.fieldname] = [];
+            grouped[f.fieldname].push(f);
+          }
+          req.files = grouped;
+        }
+      }
+
+      console.log("✅ Upload + Compression done for:", folderName);
       next();
-    } catch (error) {
-      console.error("File compression error:", error);
-      next();
+    } catch (err) {
+      console.error("❌ Upload/Compression Error:", err);
+      next(err);
     }
   };
 
-  return { upload, compressFile };
+  return { upload, handleUpload };
 };

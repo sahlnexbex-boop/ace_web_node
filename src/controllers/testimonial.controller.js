@@ -4,11 +4,19 @@ import { deleteFile } from "../utils/fileHelper.js";
 
 const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
 
+const isUnsupportedFile = (mimetype) => {
+  return !mimetype.startsWith("image/");
+};
+
 // Create
 export const createTestimonial = async (req, res) => {
   try {
     const { name_of_candidate, position_of_candidate, content, status } = req.body;
     const image_of_candidate = req.file ? `${SERVER_URL}/uploads/testimonials/${req.file.filename}` : null;
+
+    if (isUnsupportedFile(req.file.mimetype)) {
+      return res.status(400).json({ message: "Invalid file type. Only images are allowed." });
+    }
 
     if (!name_of_candidate || !content)
       return res.status(400).json({ message: "Missing required fields" });
@@ -81,6 +89,10 @@ export const updateTestimonial = async (req, res) => {
     if (!testimonial) return res.status(404).json({ message: "Testimonial not found" });
 
     if (newImage && testimonial.image_of_candidate) deleteFile(testimonial.image_of_candidate);
+    
+    if(newImage && isUnsupportedFile(req.file.mimetype)) {
+      return res.status(400).json({ message: "Invalid file type. Only images are allowed." });
+    }
 
     testimonial.name_of_candidate = name_of_candidate || testimonial.name_of_candidate;
     testimonial.position_of_candidate = position_of_candidate || testimonial.position_of_candidate;

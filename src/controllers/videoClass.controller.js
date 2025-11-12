@@ -5,6 +5,11 @@ import { deleteFile } from "../utils/fileHelper.js";
 
 const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
 
+//helper
+const isUnsupportedFile = (mimetype) => {
+  return !mimetype.startsWith("image/");
+};
+
 // create
 export const createVideoClass = async (req, res) => {
   try {
@@ -25,6 +30,10 @@ export const createVideoClass = async (req, res) => {
       const categoryExists = await CourseCategory.findByPk(category_id);
       if (!categoryExists)
         return res.status(400).json({ message: "Invalid course_category_id" });
+    }
+
+    if (isUnsupportedFile(req.file.mimetype)) {
+      return res.status(400).json({ message: "Invalid file type. Only images are allowed." });
     }
 
     const newClass = await VideoClass.create({
@@ -139,6 +148,10 @@ export const updateVideoClass = async (req, res) => {
       : null;
 
     if (newImage && videoClass.class_image) deleteFile(videoClass.class_image);
+
+    if (isUnsupportedFile(req.file.mimetype)) {
+      return res.status(400).json({ message: "Invalid file type. Only images are allowed." });
+    }
 
     videoClass.class_title = class_title || videoClass.class_title;
     videoClass.date_time = date_time || videoClass.date_time;

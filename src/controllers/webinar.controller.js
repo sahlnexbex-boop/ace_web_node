@@ -5,6 +5,10 @@ import { deleteFile } from "../utils/fileHelper.js";
 
 const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
 
+const isUnsupportedFile = (mimetype) => {
+  return !mimetype.startsWith("image/");
+};
+
 // create
 export const createWebinar = async (req, res) => {
   try {
@@ -24,6 +28,10 @@ export const createWebinar = async (req, res) => {
 
     if (!webinar_title || !date_time) {
       return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    if (isUnsupportedFile(req.file.mimetype)) {
+      return res.status(400).json({ message: "Invalid file type. Only images are allowed." });
     }
 
     if (course_category_id) {
@@ -129,6 +137,10 @@ export const updateWebinar = async (req, res) => {
 
     const webinar = await Webinar.findByPk(id);
     if (!webinar) return res.status(404).json({ message: "Webinar not found" });
+
+    if(newImage && isUnsupportedFile(req.file.mimetype)) {
+      return res.status(400).json({ message: "Invalid file type. Only images are allowed." });
+    }
 
     // Check category if provided
     if (course_category_id) {

@@ -11,12 +11,12 @@ import { verifyAccessToken } from "../middlewares/verifyAccessToken.js";
 import { dynamicUpload } from "../middlewares/upload.js";
 
 const router = express.Router();
-const {upload, compressFile} = dynamicUpload("books", ["book_image", "book_file"]);
+const {upload,handleUpload} = dynamicUpload("books", ["book_image", "book_file"]);
 
 router.post("/", verifyAccessToken, upload.fields([
   { name: "book_image", maxCount: 1 },
   { name: "book_file", maxCount: 1 },
-]), compressFile, createBook);
+]),handleUpload, createBook);
 
 router.get("/", getBooks);
 router.get("/:id", getBookById);
@@ -24,7 +24,7 @@ router.get("/:id", getBookById);
 router.put("/:id", verifyAccessToken, upload.fields([
   { name: "book_image", maxCount: 1 },
   { name: "book_file", maxCount: 1 },
-]), compressFile, updateBook);
+]),handleUpload, updateBook);
 
 router.delete("/:id", verifyAccessToken, deleteBook);
 

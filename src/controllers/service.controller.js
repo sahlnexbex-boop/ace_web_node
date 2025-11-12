@@ -4,6 +4,10 @@ import { deleteFile } from "../utils/fileHelper.js";
 
 const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
 
+const isUnsupportedFile = (mimetype) => {
+  return !mimetype.startsWith("image/");
+};
+
 //  Create
 export const createService = async (req, res) => {
   try {
@@ -17,6 +21,21 @@ export const createService = async (req, res) => {
 
     if (!service_title || !service_description || !service_date) {
       return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    if (isUnsupportedFile(req.files?.service_image[0].mimetype)) {
+      return res
+        .status(400)
+        .json({ message: "Invalid file type. Images only allowed" });
+    }
+
+    if (
+      req.files?.other_images &&
+      req.files.other_images.some((img) => isUnsupportedFile(img.mimetype))
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Invalid file type. Images only allowed" });
     }
 
     const service_image = req.files?.service_image
@@ -132,6 +151,38 @@ export const updateService = async (req, res) => {
         existingOtherImages = [];
       }
     }
+
+    if(
+      req.files?.other_images &&
+      req.files.other_images.some((img) => isUnsupportedFile(img.mimetype))
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Invalid file type. Images only allowed" });
+    }
+
+    if(
+      req.files?.service_image &&
+      isUnsupportedFile(req.files.service_image[0].mimetype)
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Invalid file type. Images only allowed" });
+    }
+
+    // if(req.files?.other_images) {
+    //   if (req.files.other_images.some((img) => isUnsupportedFile(img.mimetype))) {
+    //     return res
+    //       .status(400)
+    //       .json({ message: "Invalid file type. Images only allowed" });
+    //   }
+    // }
+
+    // if (isUnsupportedFile(req.files?.service_image[0].mimetype)) {
+    //   return res
+    //     .status(400)
+    //     .json({ message: "Invalid file type. Images only allowed" });
+    // }
 
     const newServiceImage = req.files?.service_image
       ? `${SERVER_URL}/uploads/services/${req.files.service_image[0].filename}`

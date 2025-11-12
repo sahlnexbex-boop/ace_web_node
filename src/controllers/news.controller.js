@@ -4,20 +4,33 @@ import { deleteFile } from "../utils/fileHelper.js";
 
 const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
 
+const isUnsupportedFile = (mimetype) => {
+  return !mimetype.startsWith("image/");
+};
+
+const normalizeDescription = (text = "") =>
+  text.replace(/\\n/g, "\n").replace(/\\r/g, "");
+
+
 // create
 export const createNews = async (req, res) => {
   try {
     const { news_title, date_time, news_description, status } = req.body;
     const news_image = req.file ? `${SERVER_URL}/uploads/news/${req.file.filename}` : null;
 
+    if (isUnsupportedFile(req.file.mimetype)) {
+      return res.status(400).json({ message: "Invalid file type. Only images are allowed." });
+    }
+
     if (!news_title || !date_time) {
       return res.status(400).json({ message: "Missing required fields: news_title or date_time" });
     }
+    const description = normalizeDescription(news_description);
 
     const news = await News.create({
       news_title,
       date_time,
-      news_description,
+      news_description: description,
       news_image,
       status: [0, 1].includes(Number(status)) ? Number(status) : 1,
       created_by: req.user?.user_id || 0,
@@ -78,14 +91,20 @@ export const updateNews = async (req, res) => {
     const { news_title, date_time, news_description, status } = req.body;
     const newImage = req.file ? `${SERVER_URL}/uploads/news/${req.file.filename}` : null;
 
+    if(newImage && isUnsupportedFile(req.file.mimetype)) {
+      return res.status(400).json({ message: "Invalid file type. Only images are allowed." });
+    }
+
     const news = await News.findByPk(id);
     if (!news) return res.status(404).json({ message: "News not found" });
 
     if (newImage && news.news_image) deleteFile(news.news_image);
 
+    const description = normalizeDescription(news_description);
+
     news.news_title = news_title || news.news_title;
     news.date_time = date_time || news.date_time;
-    news.news_description = news_description || news.news_description;
+    news.news_description = description || news.news_description;
     news.status = [0, 1].includes(Number(status)) ? Number(status) : news.status;
     news.news_image = newImage || news.news_image;
     news.updated_by = req.user?.user_id || 0;

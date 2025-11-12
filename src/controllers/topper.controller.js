@@ -6,11 +6,19 @@ import { deleteFile } from "../utils/fileHelper.js";
 
 const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
 
+const isUnsupportedFile = (mimetype) => {
+  return !mimetype.startsWith("image/");
+};
+
 // create
 export const createTopper = async (req, res) => {
   try {
     const { topper_name, topper_rank, year, exam_name, based_type, course_id, category_id, status } = req.body;
     const topper_image = req.file ? `${SERVER_URL}/uploads/toppers/${req.file.filename}` : null;
+
+    if (isUnsupportedFile(req.file.mimetype)) {
+      return res.status(400).json({ message: "Invalid file type. Only images are allowed." });
+    }
 
     if (!topper_name || !topper_rank || !year || !exam_name || !based_type)
       return res.status(400).json({ message: "Missing required fields" });
@@ -119,6 +127,10 @@ export const updateTopper = async (req, res) => {
     const { id } = req.params;
     const { topper_name, topper_rank, year, exam_name, based_type, course_id, category_id, status } = req.body;
     const newImage = req.file ? `${SERVER_URL}/uploads/toppers/${req.file.filename}` : null;
+
+    if(newImage && isUnsupportedFile(req.file.mimetype)) {
+      return res.status(400).json({ message: "Invalid file type. Only images are allowed." });
+    }
 
     const topper = await Topper.findByPk(id);
     if (!topper) return res.status(404).json({ message: "Topper not found" });

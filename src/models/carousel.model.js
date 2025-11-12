@@ -13,7 +13,7 @@ const Carousel = sequelize.define(
     },
     carousel_title: {
       type: DataTypes.STRING(255),
-      allowNull: false,
+      allowNull: true,
       comment: "Title",
     },
     carousel_sec_title: {
