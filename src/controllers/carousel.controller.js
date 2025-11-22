@@ -106,14 +106,14 @@ export const updateCarousel = async (req, res) => {
     const file1 = req.files?.carousel_file?.[0];
     const file2 = req.files?.carousel_mobile_file?.[0];
 
-    // ✅ FIX: validate using file1.mimetype instead of req.files.carousel_file.mimetype
+    //  FIX: validate using file1.mimetype instead of req.files.carousel_file.mimetype
     if (file1 && isUnsupportedFile(file1.mimetype)) {
       return res.status(400).json({
         message: "Invalid file type. Only images and videos are allowed."
       });
     }
 
-    // ✅ FIX: validate using file2.mimetype
+    //  FIX: validate using file2.mimetype
     if (file2 && isUnsupportedFile(file2.mimetype)) {
       return res.status(400).json({
         message: "Invalid mobile file type. Only images and videos are allowed."
@@ -131,7 +131,7 @@ export const updateCarousel = async (req, res) => {
     const carousel = await Carousel.findByPk(id);
     if (!carousel) return res.status(404).json({ message: "Carousel not found" });
 
-    // ✅ delete old files only if new files exist
+    //  delete old files only if new files exist
     if (newFile && carousel.carousel_file) deleteFile(carousel.carousel_file);
     if (newMobileFile && carousel.carousel_mobile_file) deleteFile(carousel.carousel_mobile_file);
 
