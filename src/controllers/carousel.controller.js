@@ -106,12 +106,18 @@ export const updateCarousel = async (req, res) => {
     const file1 = req.files?.carousel_file?.[0];
     const file2 = req.files?.carousel_mobile_file?.[0];
 
-    if (file1 && isUnsupportedFile(req.files.carousel_file.mimetype)) {
-      return res.status(400).json({ message: "Invalid file type. Only images and videos are allowed." });
+    // ✅ FIX: validate using file1.mimetype instead of req.files.carousel_file.mimetype
+    if (file1 && isUnsupportedFile(file1.mimetype)) {
+      return res.status(400).json({
+        message: "Invalid file type. Only images and videos are allowed."
+      });
     }
 
-    if (file2 && isUnsupportedFile(req.files.carousel_mobile_file.mimetype)) {
-      return res.status(400).json({ message: "Invalid mobile file type. Only images and videos are allowed." });
+    // ✅ FIX: validate using file2.mimetype
+    if (file2 && isUnsupportedFile(file2.mimetype)) {
+      return res.status(400).json({
+        message: "Invalid mobile file type. Only images and videos are allowed."
+      });
     }
 
     const newFile = file1
@@ -125,16 +131,21 @@ export const updateCarousel = async (req, res) => {
     const carousel = await Carousel.findByPk(id);
     if (!carousel) return res.status(404).json({ message: "Carousel not found" });
 
-    // delete old files if new ones uploaded
+    // ✅ delete old files only if new files exist
     if (newFile && carousel.carousel_file) deleteFile(carousel.carousel_file);
     if (newMobileFile && carousel.carousel_mobile_file) deleteFile(carousel.carousel_mobile_file);
 
-    carousel.carousel_title = carousel_title || null;
-    carousel.carousel_sec_title = carousel_sec_title || null;
-    carousel.carousel_description = carousel_description || null;
-    carousel.status = [0, 1].includes(Number(status)) ? Number(status) : carousel.status;
+    carousel.carousel_title = carousel_title || carousel.carousel_title;
+    carousel.carousel_sec_title = carousel_sec_title || carousel.carousel_sec_title;
+    carousel.carousel_description = carousel_description || carousel.carousel_description;
+
+    carousel.status = [0, 1].includes(Number(status))
+      ? Number(status)
+      : carousel.status;
+
     carousel.carousel_file = newFile || carousel.carousel_file;
     carousel.carousel_mobile_file = newMobileFile || carousel.carousel_mobile_file;
+
     carousel.updated_by = req.user?.user_id || 0;
     carousel.updated_at = new Date();
 
@@ -144,6 +155,7 @@ export const updateCarousel = async (req, res) => {
       message: "Carousel updated successfully",
       data: carousel,
     });
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
