@@ -138,6 +138,7 @@ export const updateCategory = async (req, res) => {
     const { id } = req.params;
     const { category_name, category_description, course_type_id, status } =
       req.body;
+
     const newImage = req.file
       ? `${SERVER_URL}/uploads/course_category/${req.file.filename}`
       : null;
@@ -146,6 +147,7 @@ export const updateCategory = async (req, res) => {
     if (!category)
       return res.status(404).json({ message: "Category not found" });
 
+    // ----- Duplicate Name Check -----
     const duplicate = await CourseCategory.findOne({
       where: {
         [Op.and]: [{ category_id: { [Op.ne]: id } }, { category_name }],
@@ -154,37 +156,39 @@ export const updateCategory = async (req, res) => {
     if (duplicate)
       return res.status(400).json({ message: "Category name already exists" });
 
+    // ----- Validate Course Type -----
     if (course_type_id) {
       const typeExists = await CourseType.findByPk(course_type_id);
       if (!typeExists)
         return res.status(400).json({ message: "Invalid course type ID" });
     }
 
-    if (newImage && category.category_image)
-      deleteFile(category.category_image);
-
+    // ----- Validate File Type BEFORE deleting old -----
     if (newImage && isUnsupportedFile(req.file.mimetype)) {
       return res
         .status(400)
         .json({ message: "Invalid file type. Only images are allowed." });
     }
 
-    // if (req.file) {
-    //   deleteFile(category.category_image);
-    //   category.category_image = `${SERVER_URL}/uploads/course_category/${req.file.filename}`;
-    // }
+    // ----- Delete Old Image -----
+    if (newImage && category.category_image) {
+      deleteFile(category.category_image);
+    }
 
-    // if(category.category_image && isUnsupportedFile(req.file.mimetype)) {
-    //   return res.status(400).json({ message: "Invalid file type. Only images are allowed." });
-    // }
-
-    category.category_name = category_name || category.category_name;
+    // ----- Update Fields -----
+    category.category_name =
+      category_name || category.category_name;
     category.category_description =
       category_description || category.category_description;
-    category.course_type_id = course_type_id || category.course_type_id;
+    category.course_type_id =
+      course_type_id || category.course_type_id;
+
     category.status = [0, 1].includes(Number(status))
       ? Number(status)
       : category.status;
+
+    category.category_image = newImage || category.category_image;
+
     category.updated_by = req.user?.user_id || 0;
     category.updated_at = new Date();
 

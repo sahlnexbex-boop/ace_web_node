@@ -1,5 +1,6 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/db.js";
+import Course from "./course.model.js";
 
 const Blog = sequelize.define(
   "Blog",
@@ -33,6 +34,12 @@ const Blog = sequelize.define(
       type: DataTypes.JSON,
       allowNull: true,
     },
+
+    course_id: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: false,
+    },
+
     status: {
       type: DataTypes.TINYINT,
       defaultValue: 1,
@@ -53,5 +60,7 @@ const Blog = sequelize.define(
     updatedAt: "updated_at",
   }
 );
+
+Blog.belongsTo(Course, { foreignKey: "course_id", as: "course" });
 
 export default Blog;

@@ -1,6 +1,7 @@
 import Blog from "../models/blogs.model.js";
 import { Op } from "sequelize";
 import { deleteFile } from "../utils/fileHelper.js";
+import Course from "../models/course.model.js";
 
 const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
 
@@ -18,7 +19,16 @@ export const createBlog = async (req, res) => {
       publishing_date,
       tags,
       status,
+      course_id,
     } = req.body;
+
+    if (!course_id)
+      return res.status(400).json({ message: "course_id is required" });
+
+    const courseExists = await Course.findByPk(course_id);
+    if (!courseExists)
+      return res.status(400).json({ message: "Invalid course_id" });
+
     const blog_image = req.file
       ? `${SERVER_URL}/uploads/blogs/${req.file.filename}`
       : null;
@@ -27,10 +37,8 @@ export const createBlog = async (req, res) => {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    if (isUnsupportedFile(req.file.mimetype)) {
-      return res
-        .status(400)
-        .json({ message: "Invalid file type. Images only allowed" });
+    if (req.file && isUnsupportedFile(req.file.mimetype)) {
+      return res.status(400).json({ message: "Invalid file type. Images only allowed" });
     }
 
     const parsedTags = tags ? JSON.parse(tags) : null;
@@ -42,6 +50,7 @@ export const createBlog = async (req, res) => {
       blog_content,
       publishing_date,
       tags: parsedTags,
+      course_id,     // ⭐ SAVE
       status: [0, 1].includes(Number(status)) ? Number(status) : 1,
       created_by: req.user?.user_id || 0,
     });
@@ -55,19 +64,25 @@ export const createBlog = async (req, res) => {
 //  list
 export const getBlogs = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = "", status } = req.query;
+    const { page = 1, limit = 10, search = "", status, course_id } = req.query;
+
     const offset = (page - 1) * limit;
 
     const where = {};
-    if (search) {
-      where.blog_title = { [Op.like]: `%${search}%` };
-    }
-    if (status && [0, 1].includes(Number(status))) {
+    if (search) where.blog_title = { [Op.like]: `%${search}%` };
+    if (status && [0, 1].includes(Number(status)))
       where.status = Number(status);
-    }
+    if (course_id) where.course_id = Number(course_id); // ⭐ FILTER BY COURSE
 
     const { rows, count } = await Blog.findAndCountAll({
       where,
+      include: [
+        {
+          model: Course,
+          as: "course",
+          attributes: ["course_id", "course_name"], // ⭐ include course name
+        },
+      ],
       limit: parseInt(limit),
       offset: parseInt(offset),
       order: [["blog_id", "DESC"]],
@@ -89,10 +104,25 @@ export const getBlogs = async (req, res) => {
 export const getBlogById = async (req, res) => {
   try {
     const { id } = req.params;
-    const blog = await Blog.findByPk(id);
-    if (!blog) return res.status(404).json({ message: "Blog not found" });
 
-    res.json({ message: "Blog fetched successfully", data: blog });
+    const blog = await Blog.findByPk(id, {
+      include: [
+        {
+          model: Course,
+          as: "course",
+          attributes: ["course_id", "course_name"],
+        },
+      ],
+    });
+
+    if (!blog) {
+      return res.status(404).json({ message: "Blog not found" });
+    }
+
+    res.json({
+      message: "Blog fetched successfully",
+      data: blog,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -109,7 +139,9 @@ export const updateBlog = async (req, res) => {
       publishing_date,
       tags,
       status,
+      course_id,     // ⭐ NEW
     } = req.body;
+
     const newImage = req.file
       ? `${SERVER_URL}/uploads/blogs/${req.file.filename}`
       : null;
@@ -117,10 +149,15 @@ export const updateBlog = async (req, res) => {
     const blog = await Blog.findByPk(id);
     if (!blog) return res.status(404).json({ message: "Blog not found" });
 
+    if (course_id) {
+      const courseExists = await Course.findByPk(course_id);
+      if (!courseExists)
+        return res.status(400).json({ message: "Invalid course_id" });
+      blog.course_id = course_id;
+    }
+
     if (newImage && isUnsupportedFile(req.file.mimetype)) {
-      return res
-        .status(400)
-        .json({ message: "Invalid file type. Only images are allowed." });
+      return res.status(400).json({ message: "Invalid image file" });
     }
 
     if (newImage && blog.blog_image) deleteFile(blog.blog_image);

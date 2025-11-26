@@ -1,6 +1,5 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/db.js";
-import Course from "./course.model.js";
 import CourseCategory from "./courseCategory.model.js";
 
 const Topper = sequelize.define(
@@ -31,18 +30,15 @@ const Topper = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    based_type: {
-      type: DataTypes.INTEGER, 
-      allowNull: false,
-    },
-    course_id: {
-      type: DataTypes.INTEGER.UNSIGNED,
-      allowNull: true,
-    },
+
+    // ❌ removed based_type  
+    // ❌ removed course_id
+
     category_id: {
       type: DataTypes.INTEGER.UNSIGNED,
-      allowNull: true,
+      allowNull: false, // NOW REQUIRED
     },
+
     status: {
       type: DataTypes.TINYINT,
       defaultValue: 1,
@@ -64,7 +60,7 @@ const Topper = sequelize.define(
   }
 );
 
-Topper.belongsTo(Course, { foreignKey: "course_id", as: "course" });
+// Only Category Relation
 Topper.belongsTo(CourseCategory, { foreignKey: "category_id", as: "category" });
 
 export default Topper;
