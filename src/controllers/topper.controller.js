@@ -1,10 +1,8 @@
 import Topper from "../models/topper.model.js";
-import Course from "../models/course.model.js";
+// import Course from "../models/course.model.js";
 import CourseCategory from "../models/courseCategory.model.js";
 import { Op } from "sequelize";
 import { deleteFile } from "../utils/fileHelper.js";
-
-const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
 
 const isUnsupportedFile = (mimetype) => {
   return !mimetype.startsWith("image/");
@@ -16,7 +14,7 @@ export const createTopper = async (req, res) => {
     const { topper_name, topper_rank, year, exam_name, category_id, status } = req.body;
 
     const topper_image = req.file
-      ? `${SERVER_URL}/uploads/toppers/${req.file.filename}`
+      ? `/uploads/toppers/${req.file.filename}`
       : null;
 
     if (req.file && isUnsupportedFile(req.file.mimetype)) {
@@ -117,7 +115,7 @@ export const updateTopper = async (req, res) => {
     const { topper_name, topper_rank, year, exam_name, category_id, status } = req.body;
 
     const newImage = req.file
-      ? `${SERVER_URL}/uploads/toppers/${req.file.filename}`
+      ? `/uploads/toppers/${req.file.filename}`
       : null;
 
     if (req.file && isUnsupportedFile(req.file.mimetype)) {
@@ -151,7 +149,6 @@ export const updateTopper = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-
 
 //  Delete
 export const deleteTopper = async (req, res) => {

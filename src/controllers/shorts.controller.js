@@ -2,8 +2,6 @@ import { Op } from "sequelize";
 import Shorts from "../models/shorts.model.js";
 import { deleteFile } from "../utils/fileHelper.js";
 
-const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
-
 const isUnsupportedFile = (mimetype) => {
   return !mimetype.startsWith("image/");
 };
@@ -13,7 +11,7 @@ export const createShort = async (req, res) => {
   try {
     const { shorts_title, status, shorts_link } = req.body;
     const shorts_file = req.file
-      ? `${SERVER_URL}/uploads/shorts/${req.file.filename}`
+      ? `/uploads/shorts/${req.file.filename}`
       : null;
 
     if (!shorts_file) {
@@ -91,7 +89,7 @@ export const updateShort = async (req, res) => {
     const { id } = req.params;
     const { shorts_title, status, shorts_link } = req.body;
     const newFile = req.file
-      ? `${SERVER_URL}/uploads/shorts/${req.file.filename}`
+      ? `/uploads/shorts/${req.file.filename}`
       : null;
 
     const short = await Shorts.findByPk(id);

@@ -3,8 +3,6 @@ import Book from "../models/publication.model.js";
 import CourseCategory from "../models/courseCategory.model.js";
 import { deleteFile } from "../utils/fileHelper.js";
 
-const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
-
 const bookUnsupportedFile = (mimetype) => {
   return !mimetype.startsWith("image/");
 };
@@ -27,11 +25,11 @@ export const createBook = async (req, res) => {
     } = req.body;
 
     const book_image = req.files?.book_image
-      ? `${SERVER_URL}/uploads/books/${req.files.book_image[0].filename}`
+      ? `/uploads/books/${req.files.book_image[0].filename}`
       : null;
 
     const book_file = req.files?.book_file
-      ? `${SERVER_URL}/uploads/books/${req.files.book_file[0].filename}`
+      ? `/uploads/books/${req.files.book_file[0].filename}`
       : null;
 
     if (!book_title || !category_id) {
@@ -170,11 +168,11 @@ export const updateBook = async (req, res) => {
     }
 
     const newImage = req.files?.book_image
-      ? `${SERVER_URL}/uploads/books/${req.files.book_image[0].filename}`
+      ? `/uploads/books/${req.files.book_image[0].filename}`
       : null;
 
     const newFile = req.files?.book_file
-      ? `${SERVER_URL}/uploads/books/${req.files.book_file[0].filename}`
+      ? `/uploads/books/${req.files.book_file[0].filename}`
       : null;
 
     if(newImage && bookUnsupportedFile(req.files.book_image[0].mimetype)) {

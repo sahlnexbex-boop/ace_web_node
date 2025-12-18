@@ -6,8 +6,6 @@ import { fileURLToPath } from "url";
 import fs from "fs";
 import path from "path";
 
-const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
-
 const isUnsupportedFile = (mimetype) => {
   return (
     mimetype.startsWith("image/") ||
@@ -35,7 +33,7 @@ export const createCurrentAffair = async (req, res) => {
     }
 
     const affair_file = req.file
-      ? `${SERVER_URL}/uploads/current_affairs/${req.file.filename}`
+      ? `/uploads/current_affairs/${req.file.filename}`
       : null;
 
     if (!affair_title || !publishing_date || !category_id) {
@@ -162,7 +160,7 @@ export const updateCurrentAffair = async (req, res) => {
     }
 
     const newFile = req.file
-      ? `${SERVER_URL}/uploads/current_affairs/${req.file.filename}`
+      ? `/uploads/current_affairs/${req.file.filename}`
       : null;
 
     const courseCategory = await CourseCategory.findByPk(category_id);

@@ -36,6 +36,11 @@ const Carousel = sequelize.define(
       allowNull: true,
       comment: "Mobile File (Image or Video)",
     },
+    button_type: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      comment: "Button Type (1 = Online Registration, 2 = Explore Now)",
+    },
     status: {
       type: DataTypes.TINYINT,
       allowNull: false,

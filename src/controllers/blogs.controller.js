@@ -3,8 +3,6 @@ import { Op } from "sequelize";
 import { deleteFile } from "../utils/fileHelper.js";
 import Course from "../models/course.model.js";
 
-const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
-
 const isUnsupportedFile = (mimetype) => {
   return !mimetype.startsWith("image/");
 };
@@ -30,7 +28,7 @@ export const createBlog = async (req, res) => {
       return res.status(400).json({ message: "Invalid course_id" });
 
     const blog_image = req.file
-      ? `${SERVER_URL}/uploads/blogs/${req.file.filename}`
+      ? `/uploads/blogs/${req.file.filename}`
       : null;
 
     if (!blog_title || !blog_author || !blog_content || !publishing_date) {
@@ -139,11 +137,11 @@ export const updateBlog = async (req, res) => {
       publishing_date,
       tags,
       status,
-      course_id,     // ⭐ NEW
+      course_id,     
     } = req.body;
 
     const newImage = req.file
-      ? `${SERVER_URL}/uploads/blogs/${req.file.filename}`
+      ? `/uploads/blogs/${req.file.filename}`
       : null;
 
     const blog = await Blog.findByPk(id);

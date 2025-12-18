@@ -3,8 +3,6 @@ import SuccessStory from "../models/successStories.model.js";
 import CourseCategory from "../models/courseCategory.model.js";
 import { deleteFile } from "../utils/fileHelper.js";
 
-const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
-
 const isUnsupportedFile = (mimetype) => {
   return !mimetype.startsWith("image/");
 };
@@ -27,7 +25,7 @@ export const createSuccessStory = async (req, res) => {
     }
 
     const thumbnail_image = req.file
-      ? `${SERVER_URL}/uploads/success_stories/${req.file.filename}`
+      ? `/uploads/success_stories/${req.file.filename}`
       : null;
 
     if (!stories_title || !name_of_candidate)
@@ -152,7 +150,7 @@ export const updateSuccessStory = async (req, res) => {
     } = req.body;
 
     const newThumbnail = req.file
-      ? `${SERVER_URL}/uploads/success_stories/${req.file.filename}`
+      ? `/uploads/success_stories/${req.file.filename}`
       : null;
 
     if(newThumbnail && isUnsupportedFile(req.file.mimetype)) {

@@ -3,8 +3,6 @@ import StudyService from "../models/studyService.model.js";
 import CourseCategory from "../models/courseCategory.model.js";
 import { deleteFile } from "../utils/fileHelper.js";
 
-const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
-
 //helper
 const isUnsupportedFile = (mimetype) => {
   return (
@@ -41,7 +39,7 @@ export const createStudyService = async (req, res) => {
     if (!req.file)
       return res.status(400).json({ message: "service_file is required" });
 
-    const service_file = `${SERVER_URL}/uploads/study_services/${req.file.filename}`;
+    const service_file = `/uploads/study_services/${req.file.filename}`;
     
     if (isUnsupportedFile(req.file.mimetype)) {
       return res.status(400).json({ message: "Invalid file type. Images & Videos not allowed." });
@@ -177,7 +175,7 @@ export const updateStudyService = async (req, res) => {
     }
 
     const newFile = req.file
-      ? `${SERVER_URL}/uploads/study_services/${req.file.filename}`
+      ? `/uploads/study_services/${req.file.filename}`
       : null;
     if (newFile && service.service_file) deleteFile(service.service_file);
 

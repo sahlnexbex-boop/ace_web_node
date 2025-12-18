@@ -4,8 +4,6 @@ import Course from "../models/course.model.js";
 import CourseCategory from "../models/courseCategory.model.js";
 import { deleteFile } from "../utils/fileHelper.js";
 
-const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
-
 const isUnsupportedFile = (mimetype) => {
   return mimetype.startsWith("image/") || mimetype.startsWith("video/");
 };
@@ -61,7 +59,7 @@ export const createResult = async (req, res) => {
       return res.status(400).json({ message: "Result title already exists" });
 
     const result_file = req.file
-      ? `${SERVER_URL}/uploads/results/${req.file.filename}`
+      ? `/uploads/results/${req.file.filename}`
       : null;
 
     const newResult = await Result.create({
@@ -204,7 +202,7 @@ export const updateResult = async (req, res) => {
     }
 
     const newFile = req.file
-      ? `${SERVER_URL}/uploads/results/${req.file.filename}`
+      ? `/uploads/results/${req.file.filename}`
       : null;
     if (newFile && result.result_file) deleteFile(result.result_file);
 

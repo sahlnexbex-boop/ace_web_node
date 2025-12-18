@@ -3,8 +3,6 @@ import VideoClass from "../models/videoClass.model.js";
 import CourseCategory from "../models/courseCategory.model.js";
 import { deleteFile } from "../utils/fileHelper.js";
 
-const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
-
 //helper
 const isUnsupportedFile = (mimetype) => {
   return !mimetype.startsWith("image/");
@@ -16,7 +14,7 @@ export const createVideoClass = async (req, res) => {
     const { class_title, date_time, video_url, category_id, status } = req.body;
 
     const class_image = req.file
-      ? `${SERVER_URL}/uploads/video_classes/${req.file.filename}`
+      ? `/uploads/video_classes/${req.file.filename}`
       : null;
 
     if (!class_title || !date_time || !video_url || !category_id) {
@@ -144,7 +142,7 @@ export const updateVideoClass = async (req, res) => {
     }
 
     const newImage = req.file
-      ? `${SERVER_URL}/uploads/video_classes/${req.file.filename}`
+      ? `/uploads/video_classes/${req.file.filename}`
       : null;
 
     if (newImage && videoClass.class_image) deleteFile(videoClass.class_image);

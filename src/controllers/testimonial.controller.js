@@ -2,8 +2,6 @@ import { Op } from "sequelize";
 import Testimonial from "../models/testimonial.model.js";
 import { deleteFile } from "../utils/fileHelper.js";
 
-const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
-
 const isUnsupportedFile = (mimetype) => {
   return !mimetype.startsWith("image/");
 };
@@ -12,7 +10,7 @@ const isUnsupportedFile = (mimetype) => {
 export const createTestimonial = async (req, res) => {
   try {
     const { name_of_candidate, position_of_candidate, content, status } = req.body;
-    const image_of_candidate = req.file ? `${SERVER_URL}/uploads/testimonials/${req.file.filename}` : null;
+    const image_of_candidate = req.file ? `/uploads/testimonials/${req.file.filename}` : null;
 
     if (isUnsupportedFile(req.file.mimetype)) {
       return res.status(400).json({ message: "Invalid file type. Only images are allowed." });
@@ -83,7 +81,7 @@ export const updateTestimonial = async (req, res) => {
   try {
     const { id } = req.params;
     const { name_of_candidate, position_of_candidate, content, status } = req.body;
-    const newImage = req.file ? `${SERVER_URL}/uploads/testimonials/${req.file.filename}` : null;
+    const newImage = req.file ? `/uploads/testimonials/${req.file.filename}` : null;
 
     const testimonial = await Testimonial.findByPk(id);
     if (!testimonial) return res.status(404).json({ message: "Testimonial not found" });

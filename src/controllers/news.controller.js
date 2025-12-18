@@ -2,8 +2,6 @@ import { Op } from "sequelize";
 import News from "../models/news.model.js";
 import { deleteFile } from "../utils/fileHelper.js";
 
-const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
-
 const isUnsupportedFile = (mimetype) => {
   return !mimetype.startsWith("image/");
 };
@@ -16,7 +14,7 @@ const normalizeDescription = (text = "") =>
 export const createNews = async (req, res) => {
   try {
     const { news_title, date_time, news_description, status } = req.body;
-    const news_image = req.file ? `${SERVER_URL}/uploads/news/${req.file.filename}` : null;
+    const news_image = req.file ? `/uploads/news/${req.file.filename}` : null;
 
     if (isUnsupportedFile(req.file.mimetype)) {
       return res.status(400).json({ message: "Invalid file type. Only images are allowed." });
@@ -89,7 +87,7 @@ export const updateNews = async (req, res) => {
   try {
     const { id } = req.params;
     const { news_title, date_time, news_description, status } = req.body;
-    const newImage = req.file ? `${SERVER_URL}/uploads/news/${req.file.filename}` : null;
+    const newImage = req.file ? `/uploads/news/${req.file.filename}` : null;
 
     if(newImage && isUnsupportedFile(req.file.mimetype)) {
       return res.status(400).json({ message: "Invalid file type. Only images are allowed." });

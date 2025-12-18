@@ -3,8 +3,6 @@ import Course from "../models/course.model.js";
 import CourseCategory from "../models/courseCategory.model.js";
 import { deleteFile } from "../utils/fileHelper.js";
 
-const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
-
 // Create Course
 export const createCourse = async (req, res) => {
   try {
@@ -48,7 +46,7 @@ export const createCourse = async (req, res) => {
           message: "Invalid image type. Only JPG, PNG, GIF, WEBP allowed.",
         });
       }
-      course_image = `${SERVER_URL}/uploads/course/${imageFile.filename}`;
+      course_image = `/uploads/course/${imageFile.filename}`;
     }
 
     let course_syllabus_file = null;
@@ -70,7 +68,7 @@ export const createCourse = async (req, res) => {
           message: "Invalid file type for syllabus file. No images or videos allowed.",
         });
       }
-      course_syllabus_file = `${SERVER_URL}/uploads/course/${syllabusFile.filename}`;
+      course_syllabus_file = `/uploads/course/${syllabusFile.filename}`;
     }
 
     let course_questions_file = null;
@@ -92,7 +90,7 @@ export const createCourse = async (req, res) => {
           message: "Invalid file type for questions file. No images or videos allowed.",
         });
       }
-      course_questions_file = `${SERVER_URL}/uploads/course/${questionsFile.filename}`;
+      course_questions_file = `/uploads/course/${questionsFile.filename}`;
     }
 
     const newCourse = await Course.create({
@@ -255,7 +253,7 @@ export const updateCourse = async (req, res) => {
           });
       }
 
-      newImage = `${SERVER_URL}/uploads/course/${imageFile.filename}`;
+      newImage = `/uploads/course/${imageFile.filename}`;
     }
 
     if (req.files?.course_syllabus_file) {
@@ -279,7 +277,7 @@ export const updateCourse = async (req, res) => {
         });
       }
 
-      newSyllabusFile = `${SERVER_URL}/uploads/course/${syllabusFile.filename}`;
+      newSyllabusFile = `/uploads/course/${syllabusFile.filename}`;
     }
 
     if (req.files?.course_questions_file) {
@@ -303,7 +301,7 @@ export const updateCourse = async (req, res) => {
         });
       }
 
-      newQuestionsFile = `${SERVER_URL}/uploads/course/${questionsFile.filename}`;
+      newQuestionsFile = `/uploads/course/${questionsFile.filename}`;
     }
 
     if (newImage && course.course_image) deleteFile(course.course_image);

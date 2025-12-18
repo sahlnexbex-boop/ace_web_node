@@ -2,8 +2,6 @@ import { Op } from "sequelize";
 import Service from "../models/service.model.js";
 import { deleteFile } from "../utils/fileHelper.js";
 
-const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
-
 const isUnsupportedFile = (mimetype) => {
   return !mimetype.startsWith("image/");
 };
@@ -39,12 +37,12 @@ export const createService = async (req, res) => {
     }
 
     const service_image = req.files?.service_image
-      ? `${SERVER_URL}/uploads/services/${req.files.service_image[0].filename}`
+      ? `/uploads/services/${req.files.service_image[0].filename}`
       : null;
 
     const other_images = req.files?.other_images
       ? req.files.other_images.map(
-          (img) => `${SERVER_URL}/uploads/services/${img.filename}`
+          (img) => `/uploads/services/${img.filename}`
         )
       : [];
 
@@ -185,12 +183,12 @@ export const updateService = async (req, res) => {
     // }
 
     const newServiceImage = req.files?.service_image
-      ? `${SERVER_URL}/uploads/services/${req.files.service_image[0].filename}`
+      ? `/uploads/services/${req.files.service_image[0].filename}`
       : null;
 
     const newOtherImages = req.files?.other_images
       ? req.files.other_images.map(
-          (img) => `${SERVER_URL}/uploads/services/${img.filename}`
+          (img) => `/uploads/services/${img.filename}`
         )
       : [];
 

@@ -2,8 +2,6 @@ import { Op } from "sequelize";
 import Carousel from "../models/carousel.model.js";
 import { deleteFile } from "../utils/fileHelper.js";
 
-const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
-
 // helper
 const isUnsupportedFile = (mimetype) => {
   return !(
@@ -15,7 +13,7 @@ const isUnsupportedFile = (mimetype) => {
 // create
 export const createCarousel = async (req, res) => {
   try {
-    const { carousel_title, carousel_sec_title, carousel_description, status } = req.body;
+    const { carousel_title, carousel_sec_title, carousel_description, status, button_type } = req.body;
 
     const file1 = req.files?.carousel_file?.[0];
     const file2 = req.files?.carousel_mobile_file?.[0];
@@ -31,9 +29,13 @@ export const createCarousel = async (req, res) => {
       return res.status(400).json({ message: "Invalid mobile file type. Only images and videos are allowed." });
     }
 
-    const carousel_file = `${SERVER_URL}/uploads/carousel/${file1.filename}`;
+    if(button_type !== "1" && button_type !== "2") {
+      return res.status(400).json({ message: "Invalid button type. Only 1 and 2 are allowed." });
+    }
+
+    const carousel_file = `/uploads/carousel/${file1.filename}`;
     const carousel_mobile_file = file2
-      ? `${SERVER_URL}/uploads/carousel/${file2.filename}`
+      ? `/uploads/carousel/${file2.filename}`
       : null;
 
     const newCarousel = await Carousel.create({
@@ -42,6 +44,7 @@ export const createCarousel = async (req, res) => {
       carousel_description,
       carousel_file,
       carousel_mobile_file,
+      button_type: Number(button_type),
       status: [0, 1].includes(Number(status)) ? Number(status) : 1,
       created_by: req.user?.user_id || 0,
     });
@@ -101,7 +104,7 @@ export const getCarouselById = async (req, res) => {
 export const updateCarousel = async (req, res) => {
   try {
     const { id } = req.params;
-    const { carousel_title, carousel_sec_title, carousel_description, status } = req.body;
+    const { carousel_title, carousel_sec_title, carousel_description, status, button_type } = req.body;
 
     const file1 = req.files?.carousel_file?.[0];
     const file2 = req.files?.carousel_mobile_file?.[0];
@@ -120,12 +123,16 @@ export const updateCarousel = async (req, res) => {
       });
     }
 
+    if(button_type !== "1" && button_type !== "2") {
+      return res.status(400).json({ message: "Invalid button type. Only 1 and 2 are allowed." });
+    }
+
     const newFile = file1
-      ? `${SERVER_URL}/uploads/carousel/${file1.filename}`
+      ? `/uploads/carousel/${file1.filename}`
       : null;
 
     const newMobileFile = file2
-      ? `${SERVER_URL}/uploads/carousel/${file2.filename}`
+      ? `/uploads/carousel/${file2.filename}`
       : null;
 
     const carousel = await Carousel.findByPk(id);
@@ -148,6 +155,10 @@ export const updateCarousel = async (req, res) => {
 
     carousel.updated_by = req.user?.user_id || 0;
     carousel.updated_at = new Date();
+
+    if (button_type) {
+      carousel.button_type = Number(button_type);
+    }
 
     await carousel.save();
 

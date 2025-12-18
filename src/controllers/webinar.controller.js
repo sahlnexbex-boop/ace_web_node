@@ -3,8 +3,6 @@ import Webinar from "../models/webinar.model.js";
 import CourseCategory from "../models/courseCategory.model.js";
 import { deleteFile } from "../utils/fileHelper.js";
 
-const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
-
 const isUnsupportedFile = (mimetype) => {
   return !mimetype.startsWith("image/");
 };
@@ -24,7 +22,7 @@ export const createWebinar = async (req, res) => {
       status,
     } = req.body;
 
-    const webinar_image = req.file ? `${SERVER_URL}/uploads/webinars/${req.file.filename}` : null;
+    const webinar_image = req.file ? `/uploads/webinars/${req.file.filename}` : null;
 
     if (!webinar_title || !date_time) {
       return res.status(400).json({ message: "Missing required fields" });
@@ -133,7 +131,7 @@ export const updateWebinar = async (req, res) => {
       status,
     } = req.body;
 
-    const newImage = req.file ? `${SERVER_URL}/uploads/webinars/${req.file.filename}` : null;
+    const newImage = req.file ? `/uploads/webinars/${req.file.filename}` : null;
 
     const webinar = await Webinar.findByPk(id);
     if (!webinar) return res.status(404).json({ message: "Webinar not found" });

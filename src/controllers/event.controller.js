@@ -2,8 +2,6 @@ import { Op } from "sequelize";
 import Event from "../models/event.model.js";
 import { deleteFile } from "../utils/fileHelper.js";
 
-const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
-
 // helper for checking files
 const isUnsupportedFile = (mimetype) => {
   // allow only images
@@ -22,7 +20,7 @@ export const createEvent = async (req, res) => {
       status,
     } = req.body;
     const event_image = req.file
-      ? `${SERVER_URL}/uploads/events/${req.file.filename}`
+      ? `/uploads/events/${req.file.filename}`
       : null;
 
     if (req.file && isUnsupportedFile(req.file.mimetype)) {
@@ -124,7 +122,7 @@ export const updateEvent = async (req, res) => {
       status,
     } = req.body;
     const newImage = req.file
-      ? `${SERVER_URL}/uploads/events/${req.file.filename}`
+      ? `/uploads/events/${req.file.filename}`
       : null;
 
     const event = await Event.findByPk(id);

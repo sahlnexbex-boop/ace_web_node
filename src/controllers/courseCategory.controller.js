@@ -4,8 +4,6 @@ import { deleteFile } from "../utils/fileHelper.js";
 import CourseCategory from "../models/courseCategory.model.js";
 import CourseType from "../models/courseType.model.js";
 
-const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
-
 // helper
 const isUnsupportedFile = (mimetype) => {
   return !mimetype.startsWith("image/");
@@ -32,7 +30,7 @@ export const createCategory = async (req, res) => {
       return res.status(400).json({ message: "Invalid course type ID" });
 
     const image = req.file
-      ? `${SERVER_URL}/uploads/course_category/${req.file.filename}`
+      ? `/uploads/course_category/${req.file.filename}`
       : null;
 
     if (isUnsupportedFile(req.file.mimetype)) {
@@ -140,7 +138,7 @@ export const updateCategory = async (req, res) => {
       req.body;
 
     const newImage = req.file
-      ? `${SERVER_URL}/uploads/course_category/${req.file.filename}`
+      ? `/uploads/course_category/${req.file.filename}`
       : null;
 
     const category = await CourseCategory.findByPk(id);

@@ -4,8 +4,6 @@ import Course from "../models/course.model.js";
 import CourseCategory from "../models/courseCategory.model.js";
 import { deleteFile } from "../utils/fileHelper.js";
 
-const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
-
 const isUnsupportedFile = (mimetype) => {
   return !mimetype.startsWith("image/");
 };
@@ -30,7 +28,7 @@ export const createRankHolder = async (req, res) => {
     } = req.body;
 
     const student_photo = req.file
-      ? `${SERVER_URL}/uploads/rank_holders/${req.file.filename}`
+      ? `/uploads/rank_holders/${req.file.filename}`
       : null;
 
     if (isUnsupportedFile(req.file.mimetype)) {
@@ -40,7 +38,7 @@ export const createRankHolder = async (req, res) => {
     }
 
     // const topper_image = req.file
-    //   ? `${SERVER_URL}/uploads/toppers/${req.file.filename}`
+    //   ? `/uploads/toppers/${req.file.filename}`
     //   : null;
 
     if (!student_name || !student_rank || !based_type)
@@ -224,7 +222,7 @@ export const updateRankHolder = async (req, res) => {
     } = req.body;
 
     const newPhoto = req.file
-      ? `${SERVER_URL}/uploads/rank_holders/${req.file.filename}`
+      ? `/uploads/rank_holders/${req.file.filename}`
       : null;
 
     if(newPhoto && isUnsupportedFile(req.file.mimetype)) {
