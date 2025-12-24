@@ -2,6 +2,10 @@ import { Op } from "sequelize";
 import VideoClass from "../models/videoClass.model.js";
 import CourseCategory from "../models/courseCategory.model.js";
 import { deleteFile } from "../utils/fileHelper.js";
+import {
+  extractYoutubeVideoId,
+  isValidYoutubeVideoId,
+} from "../utils/ytLinkHelper.js";
 
 //helper
 const isUnsupportedFile = (mimetype) => {
@@ -24,6 +28,19 @@ export const createVideoClass = async (req, res) => {
       });
     }
 
+    let processedShortsLink = video_url;
+    if (video_url) {
+      const videoId = extractYoutubeVideoId(video_url);
+
+      if (videoId && isValidYoutubeVideoId(videoId)) {
+        processedShortsLink = videoId;
+      } else {
+        return res.status(400).json({
+          message: "Invalid YouTube link or video ID provided",
+        });
+      }
+    }
+
     if (category_id) {
       const categoryExists = await CourseCategory.findByPk(category_id);
       if (!categoryExists)
@@ -31,13 +48,15 @@ export const createVideoClass = async (req, res) => {
     }
 
     if (isUnsupportedFile(req.file.mimetype)) {
-      return res.status(400).json({ message: "Invalid file type. Only images are allowed." });
+      return res
+        .status(400)
+        .json({ message: "Invalid file type. Only images are allowed." });
     }
 
     const newClass = await VideoClass.create({
       class_title,
       date_time,
-      video_url,
+      video_url: processedShortsLink,
       category_id,
       class_image,
       status: [0, 1].includes(Number(status)) ? Number(status) : 1,
@@ -141,19 +160,38 @@ export const updateVideoClass = async (req, res) => {
         return res.status(400).json({ message: "Invalid course_category_id" });
     }
 
+    let processedShortsLink = video_url;
+    if (video_url) {
+      const videoId = extractYoutubeVideoId(video_url);
+
+      if (videoId && isValidYoutubeVideoId(videoId)) {
+        processedShortsLink = videoId;
+      } else {
+        return res.status(400).json({
+          message: "Invalid YouTube link or video ID provided",
+        });
+      }
+    }
+
     const newImage = req.file
       ? `/uploads/video_classes/${req.file.filename}`
       : null;
 
     if (newImage && videoClass.class_image) deleteFile(videoClass.class_image);
-
-    if (isUnsupportedFile(req.file.mimetype)) {
-      return res.status(400).json({ message: "Invalid file type. Only images are allowed." });
+    if (newImage && isUnsupportedFile(req.file.mimetype)) {
+      return res
+        .status(400)
+        .json({ message: "Invalid file type. Videos only allowed" });
     }
+    // if (isUnsupportedFile(req.file.mimetype)) {
+    //   return res
+    //     .status(400)
+    //     .json({ message: "Invalid file type. Only images are allowed." });
+    // }
 
     videoClass.class_title = class_title || videoClass.class_title;
     videoClass.date_time = date_time || videoClass.date_time;
-    videoClass.video_url = video_url || videoClass.video_url;
+    videoClass.video_url = processedShortsLink || null;
     videoClass.category_id = category_id || videoClass.category_id;
     videoClass.status = [0, 1].includes(Number(status))
       ? Number(status)

@@ -2,6 +2,10 @@ import { Op } from "sequelize";
 import SuccessStory from "../models/successStories.model.js";
 import CourseCategory from "../models/courseCategory.model.js";
 import { deleteFile } from "../utils/fileHelper.js";
+import {
+  extractYoutubeVideoId,
+  isValidYoutubeVideoId,
+} from "../utils/ytLinkHelper.js";
 
 const isUnsupportedFile = (mimetype) => {
   return !mimetype.startsWith("image/");
@@ -37,6 +41,20 @@ export const createSuccessStory = async (req, res) => {
         return res.status(400).json({ message: "Invalid course_category_id" });
     }
 
+     // Extract YouTube video ID from shorts_link if provided
+    let processedShortsLink = youtube_video_link;
+    if (youtube_video_link) {
+      const videoId = extractYoutubeVideoId(youtube_video_link);
+      
+      if (videoId && isValidYoutubeVideoId(videoId)) {
+        processedShortsLink = videoId;
+      } else {
+        return res.status(400).json({
+          message: "Invalid YouTube link or video ID provided"
+        });
+      }
+    }
+
     const story = await SuccessStory.create({
       stories_title,
       name_of_candidate,
@@ -44,7 +62,7 @@ export const createSuccessStory = async (req, res) => {
       description,
       course_category_id,
       thumbnail_image,
-      youtube_video_link,
+      youtube_video_link: processedShortsLink,
       status: [0, 1].includes(Number(status)) ? Number(status) : 1,
       created_by: req.user?.user_id || 0,
     });
@@ -167,6 +185,20 @@ export const updateSuccessStory = async (req, res) => {
         return res.status(400).json({ message: "Invalid course_category_id" });
     }
 
+     // Extract YouTube video ID from shorts_link if provided
+    let processedShortsLink = youtube_video_link;
+    if (youtube_video_link) {
+      const videoId = extractYoutubeVideoId(youtube_video_link);
+      
+      if (videoId && isValidYoutubeVideoId(videoId)) {
+        processedShortsLink = videoId;
+      } else {
+        return res.status(400).json({
+          message: "Invalid YouTube link or video ID provided"
+        });
+      }
+    }
+
     if (newThumbnail && story.thumbnail_image)
       deleteFile(story.thumbnail_image);
 
@@ -175,7 +207,7 @@ export const updateSuccessStory = async (req, res) => {
     story.year = year || story.year;
     story.description = description || story.description;
     story.course_category_id = course_category_id || story.course_category_id;
-    story.youtube_video_link = youtube_video_link || story.youtube_video_link;
+    story.youtube_video_link = processedShortsLink || null;
     story.status = [0, 1].includes(Number(status))
       ? Number(status)
       : story.status;

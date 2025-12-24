@@ -13,7 +13,7 @@ const Shorts = sequelize.define(
     },
     shorts_title: {
       type: DataTypes.STRING(255),
-      allowNull: false,
+      allowNull: true,
       comment: "Title",
     },
     shorts_file: {

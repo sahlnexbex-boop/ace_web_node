@@ -1,6 +1,10 @@
 import { Op } from "sequelize";
 import Shorts from "../models/shorts.model.js";
 import { deleteFile } from "../utils/fileHelper.js";
+import {
+  extractYoutubeVideoId,
+  isValidYoutubeVideoId,
+} from "../utils/ytLinkHelper.js";
 
 const isUnsupportedFile = (mimetype) => {
   return !mimetype.startsWith("image/");
@@ -20,13 +24,29 @@ export const createShort = async (req, res) => {
         .json({ message: "Missing required field: shorts_file" });
     }
 
-     if (isUnsupportedFile(req.file.mimetype)) {
-      return res.status(400).json({ message: "Invalid file type. Videos only allowed" });
+    if (isUnsupportedFile(req.file.mimetype)) {
+      return res
+        .status(400)
+        .json({ message: "Invalid file type. Videos only allowed" });
+    }
+
+    // Extract YouTube video ID from shorts_link if provided
+    let processedShortsLink = shorts_link;
+    if (shorts_link) {
+      const videoId = extractYoutubeVideoId(shorts_link);
+
+      if (videoId && isValidYoutubeVideoId(videoId)) {
+        processedShortsLink = videoId;
+      } else {
+        return res.status(400).json({
+          message: "Invalid YouTube link or video ID provided",
+        });
+      }
     }
 
     const newShort = await Shorts.create({
       shorts_title,
-      shorts_link,
+      shorts_link: processedShortsLink,
       shorts_file,
       status: [0, 1].includes(Number(status)) ? Number(status) : 1,
       created_by: req.user?.user_id || 0,
@@ -88,21 +108,35 @@ export const updateShort = async (req, res) => {
   try {
     const { id } = req.params;
     const { shorts_title, status, shorts_link } = req.body;
-    const newFile = req.file
-      ? `/uploads/shorts/${req.file.filename}`
-      : null;
+    const newFile = req.file ? `/uploads/shorts/${req.file.filename}` : null;
 
     const short = await Shorts.findByPk(id);
     if (!short) return res.status(404).json({ message: "Short not found" });
 
     if (newFile && short.shorts_file) deleteFile(short.shorts_file);
 
-    if(newFile && isUnsupportedFile(req.file.mimetype)) {
-      return res.status(400).json({ message: "Invalid file type. Videos only allowed" });
+    if (newFile && isUnsupportedFile(req.file.mimetype)) {
+      return res
+        .status(400)
+        .json({ message: "Invalid file type. Videos only allowed" });
     }
 
-    short.shorts_title = shorts_title || short.shorts_title;
-    short.shorts_link = shorts_link || short.short_link;
+     // Extract YouTube video ID from shorts_link if provided
+    let processedShortsLink = shorts_link;
+    if (shorts_link) {
+      const videoId = extractYoutubeVideoId(shorts_link);
+      
+      if (videoId && isValidYoutubeVideoId(videoId)) {
+        processedShortsLink = videoId;
+      } else {
+        return res.status(400).json({
+          message: "Invalid YouTube link or video ID provided"
+        });
+      }
+    }
+
+    short.shorts_title = shorts_title || null;
+    short.shorts_link = processedShortsLink || null;
     short.status = [0, 1].includes(Number(status))
       ? Number(status)
       : short.status;
