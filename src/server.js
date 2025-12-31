@@ -30,6 +30,8 @@ import carouselRoutes from "./routes/carousel.routes.js";
 import shortsRoutes from "./routes/shorts.routes.js";
 import onlineRegistrationRoutes from "./routes/onlineRegistration.routes.js";
 import rankForumRoutes from "./routes/rankForum.routes.js";
+import studentAuthRoutes from "./routes/studentAuth.routes.js";
+import studentRoutes from "./routes/student.routes.js";
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -69,6 +71,9 @@ app.use("/api/shorts", shortsRoutes);
 app.use("/api/online-registration", onlineRegistrationRoutes);
 app.use("/api/rank-forum", rankForumRoutes);
 
+//student routes
+app.use("/api/student/auth", studentAuthRoutes);
+app.use("/api/student", studentRoutes);
 
 const PORT = process.env.PORT || 5000;
 

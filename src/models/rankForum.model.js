@@ -1,6 +1,5 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/db.js";
-import CourseCategory from "./courseCategory.model.js";
 
 const RankForum = sequelize.define(
   "RankForum",
@@ -26,52 +25,48 @@ const RankForum = sequelize.define(
       allowNull: false,
     },
 
-    rank: {
-      type: DataTypes.STRING(100),
+    course: {
+      type: DataTypes.STRING(150),
       allowNull: false,
     },
 
-    department_id: {
-      type: DataTypes.INTEGER.UNSIGNED,
+    batch: {
+      type: DataTypes.STRING(150),
+      allowNull: true,
+    },
+    year_of_study: {
+      type: DataTypes.STRING(10),
       allowNull: false,
     },
-
+    reg_no: {
+      type: DataTypes.STRING(150),
+      allowNull: false,
+    },
     name_of_office: {
-      type: DataTypes.STRING(200),
+      type: DataTypes.STRING(250),
       allowNull: false,
     },
-
     post: {
       type: DataTypes.STRING(150),
       allowNull: false,
     },
-
-    district: {
-      type: DataTypes.STRING(150),
-      allowNull: false,
-    },
-
     joining_date: {
       type: DataTypes.DATE,
       allowNull: false,
     },
-
+    office_address: {
+      type: DataTypes.STRING(250),
+      allowNull: true,
+    },
     request_status: {
       type: DataTypes.TINYINT,
       allowNull: false,
       defaultValue: 1,
     },
-
-    photo: {
-      type: DataTypes.STRING(150),
-      allowNull: true,
-    },
-
     status: {
       type: DataTypes.TINYINT,
       defaultValue: 1,
     },
-
     created_by: {
       type: DataTypes.INTEGER,
       defaultValue: 0,
@@ -89,11 +84,5 @@ const RankForum = sequelize.define(
     updatedAt: "updated_at",
   }
 );
-
-// association (NO DB constraint)
-RankForum.belongsTo(CourseCategory, {
-  foreignKey: "department_id",
-  as: "department",
-});
 
 export default RankForum;
