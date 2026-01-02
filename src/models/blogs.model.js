@@ -61,6 +61,6 @@ const Blog = sequelize.define(
   }
 );
 
-Blog.belongsTo(Course, { foreignKey: "course_id", as: "course" });
+Blog.belongsTo(Course, { foreignKey: "course_id", as: "course", constraints: false });
 
 export default Blog;
