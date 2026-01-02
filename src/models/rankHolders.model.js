@@ -51,10 +51,6 @@ const RankHolder = sequelize.define(
       type: DataTypes.STRING(255),
       allowNull: true,
     },
-    approval_status: {
-      type: DataTypes.INTEGER,
-      defaultValue: 1,
-    },
     status: {
       type: DataTypes.TINYINT,
       defaultValue: 1,

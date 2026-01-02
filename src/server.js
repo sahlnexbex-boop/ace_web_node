@@ -32,6 +32,8 @@ import onlineRegistrationRoutes from "./routes/onlineRegistration.routes.js";
 import rankForumRoutes from "./routes/rankForum.routes.js";
 import studentAuthRoutes from "./routes/studentAuth.routes.js";
 import studentRoutes from "./routes/student.routes.js";
+import scholarshipExamRoutes from "./routes/scholarshipExam.routes.js";
+import examRegistrationRoutes from "./routes/examRegistration.routes.js";
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -70,6 +72,9 @@ app.use("/api/carousel", carouselRoutes);
 app.use("/api/shorts", shortsRoutes);
 app.use("/api/online-registration", onlineRegistrationRoutes);
 app.use("/api/rank-forum", rankForumRoutes);
+app.use("/api/scholarship-exam", scholarshipExamRoutes);
+app.use("/api/exam-registration", examRegistrationRoutes);
+
 
 //student routes
 app.use("/api/student/auth", studentAuthRoutes);

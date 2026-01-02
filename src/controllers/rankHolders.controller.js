@@ -22,7 +22,6 @@ export const createRankHolder = async (req, res) => {
       name_of_office,
       place,
       phone_no,
-      approval_status,
       status,
       year,
     } = req.body;
@@ -36,11 +35,6 @@ export const createRankHolder = async (req, res) => {
         .status(400)
         .json({ message: "Invalid file type. Only images are allowed." });
     }
-
-    // const topper_image = req.file
-    //   ? `/uploads/toppers/${req.file.filename}`
-    //   : null;
-
     if (!student_name || !student_rank || !based_type)
       return res.status(400).json({ message: "Missing required fields" });
 
@@ -67,11 +61,6 @@ export const createRankHolder = async (req, res) => {
         return res.status(400).json({ message: "Invalid category_id" });
     }
 
-    if (approval_status && ![1, 2, 3].includes(Number(approval_status)))
-      return res
-        .status(400)
-        .json({ message: "Invalid approval_status (allowed 1, 2, 3)" });
-
     const rankHolder = await RankHolder.create({
       student_name,
       student_rank,
@@ -83,7 +72,6 @@ export const createRankHolder = async (req, res) => {
       name_of_office,
       place,
       phone_no,
-      approval_status: approval_status ? Number(approval_status) : 1,
       status: [0, 1].includes(Number(status)) ? Number(status) : 1,
       year,
       student_photo,
@@ -110,38 +98,32 @@ export const getRankHolders = async (req, res) => {
       course_id,
       category_id,
       year,
-      approval_status, // ✅ new filter param
     } = req.query;
 
     const offset = (page - 1) * limit;
     const where = {};
 
-    // 🔹 Search filter
+    //  Search filter
     if (search) {
       where.student_name = { [Op.like]: `%${search}%` };
     }
 
-    // 🔹 Status filter (0 or 1)
+    //  Status filter (0 or 1)
     if (status && [0, 1].includes(Number(status))) {
       where.status = Number(status);
     }
 
-    // 🔹 Based type filter (1 or 2)
+    //  Based type filter (1 or 2)
     if (based_type && [1, 2].includes(Number(based_type))) {
       where.based_type = Number(based_type);
     }
 
-    // 🔹 Course, Category, and Year filters
+    //  Course, Category, and Year filters
     if (course_id) where.course_id = course_id;
     if (category_id) where.category_id = category_id;
     if (year) where.year = year;
 
-    // 🔹 Approval status filter (only supports 1, 2, 3)
-    if (approval_status && [1, 2, 3].includes(Number(approval_status))) {
-      where.approval_status = Number(approval_status);
-    }
-
-    // 🔹 Query with associations
+    //  Query with associations
     const { rows, count } = await RankHolder.findAndCountAll({
       where,
       include: [
@@ -161,7 +143,7 @@ export const getRankHolders = async (req, res) => {
       order: [["rank_holder_id", "DESC"]],
     });
 
-    // 🔹 Response
+    //  Response
     res.json({
       message: "Rank Holders fetched successfully",
       total: count,
@@ -216,7 +198,6 @@ export const updateRankHolder = async (req, res) => {
       name_of_office,
       place,
       phone_no,
-      approval_status,
       status,
       year,
     } = req.body;
@@ -248,11 +229,6 @@ export const updateRankHolder = async (req, res) => {
         return res.status(400).json({ message: "Invalid category_id" });
     }
 
-    if (approval_status && ![1, 2, 3].includes(Number(approval_status)))
-      return res
-        .status(400)
-        .json({ message: "Invalid approval_status (allowed 1, 2, 3)" });
-
     if (newPhoto && rankHolder.student_photo)
       deleteFile(rankHolder.student_photo);
 
@@ -266,7 +242,6 @@ export const updateRankHolder = async (req, res) => {
     rankHolder.name_of_office = name_of_office || rankHolder.name_of_office;
     rankHolder.place = place || rankHolder.place;
     rankHolder.phone_no = phone_no || rankHolder.phone_no;
-    rankHolder.approval_status = approval_status || rankHolder.approval_status;
     rankHolder.status = [0, 1].includes(Number(status))
       ? Number(status)
       : rankHolder.status;
