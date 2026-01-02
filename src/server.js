@@ -83,7 +83,7 @@ app.use("/api/student", studentRoutes);
 const PORT = process.env.PORT || 5000;
 
 sequelize
-  .sync()
+  .sync({ alter: true })
   .then(async () => {
     console.log(" Database connected");
 

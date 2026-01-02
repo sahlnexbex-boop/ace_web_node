@@ -71,9 +71,6 @@ const OnlineRegistration = sequelize.define(
   }
 );
 
-//   ❗ IMPORTANT
-//   constraints: false prevents FK creation
-
 OnlineRegistration.belongsTo(CourseCategory, {
   foreignKey: "department_id",
   as: "department",
