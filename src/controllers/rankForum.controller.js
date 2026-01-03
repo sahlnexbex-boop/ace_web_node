@@ -1,5 +1,6 @@
 import RankForum from "../models/rankForum.model.js";
 import { Op } from "sequelize";
+import ExcelJS from "exceljs";
 
 // helpers
 const normalizeTinyInt = (val, defaultVal = 1) => {
@@ -211,5 +212,112 @@ export const deleteRankForum = async (req, res) => {
     res.json({ message: "RankForum deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+};
+
+export const downloadRankForumExcel = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      export: exportType, // "all" or undefined
+    } = req.query;
+
+    const where = {
+      status: 1, //  ONLY status = 1
+    };
+
+    let rows;
+
+    if (exportType === "all") {
+      // 🔹 FULL DATA EXPORT
+      rows = await RankForum.findAll({
+        where,
+        order: [["rankforum_id", "DESC"]],
+      });
+    } else {
+      // 🔹 PAGINATED EXPORT
+      const offset = (page - 1) * limit;
+
+      const result = await RankForum.findAll({
+        where,
+        limit: Number(limit),
+        offset: Number(offset),
+        order: [["rankforum_id", "DESC"]],
+      });
+
+      rows = result;
+    }
+
+    // ============================
+    // CREATE EXCEL
+    // ============================
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Rank Forum");
+
+    worksheet.columns = [
+      { header: "Si.No", key: "si_no", width: 8 },
+      { header: "Register No", key: "reg_no", width: 18 },
+      { header: "Name", key: "name", width: 22 },
+      { header: "Course", key: "course", width: 20 },
+      { header: "Batch", key: "batch", width: 15 },
+      { header: "Year Of Study", key: "year_of_study", width: 18 },
+      { header: "Joining Date", key: "joining_date", width: 18 },
+      { header: "Mobile No", key: "mobile_no", width: 18 },
+      { header: "Email", key: "email", width: 28 },
+      { header: "Request Status", key: "request_status", width: 18 },
+      { header: "Office Name", key: "name_of_office", width: 25 },
+      { header: "Position", key: "post", width: 22 },
+      { header: "Office Address", key: "office_address", width: 30 },
+    ];
+
+    // Header styling
+    worksheet.getRow(1).font = { bold: true };
+
+    // Status mapper
+    const requestStatusMap = {
+      1: "Requested",
+      2: "Approved",
+      3: "Rejected",
+    };
+
+    rows.forEach((item, index) => {
+      worksheet.addRow({
+        si_no: index + 1,
+        reg_no: item.reg_no,
+        name: item.name,
+        course: item.course,
+        batch: item.batch,
+        year_of_study: item.year_of_study,
+        joining_date: item.joining_date,
+        mobile_no: item.mobile_no,
+        email: item.email,
+        request_status: requestStatusMap[item.request_status] || "Requested",
+        name_of_office: item.name_of_office,
+        post: item.post,
+        office_address: item.office_address,
+      });
+    });
+
+    // ============================
+    // RESPONSE HEADERS
+    // ============================
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=rank_forum_${
+        exportType === "all" ? "full" : `page_${page}`
+      }.xlsx`
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error("Excel export error:", error);
+    res.status(500).json({ message: "Failed to export Rank Forum data" });
   }
 };

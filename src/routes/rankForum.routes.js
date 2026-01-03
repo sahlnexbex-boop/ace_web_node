@@ -5,6 +5,7 @@ import {
   getRankForumById,
   updateRankForum,
   deleteRankForum,
+  downloadRankForumExcel,
 } from "../controllers/rankForum.controller.js";
 
 import { verifyAccessToken } from "../middlewares/verifyAccessToken.js";
@@ -16,6 +17,7 @@ const router = express.Router();
 const upload = multer();
 
 router.post("/", upload.none(), createRankForum);
+router.get("/export", downloadRankForumExcel);
 router.get("/", verifyAccessToken, getRankForums);
 router.get("/:id", verifyAccessToken, getRankForumById);
 router.put("/:id", verifyAccessToken, upload.none(), updateRankForum);

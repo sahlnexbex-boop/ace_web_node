@@ -35,6 +35,11 @@ const ScholarshipExam = sequelize.define(
       allowNull: false,
     },
 
+    exam_image: {
+      type: DataTypes.STRING(200),
+      allowNull: true,
+    },
+
     last_apply_date: {
       type: DataTypes.DATEONLY,
       allowNull: false,
