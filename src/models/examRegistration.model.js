@@ -90,10 +90,9 @@ ExamRegistration.belongsTo(ScholarshipExam, {
   targetKey: "exam_id",
   constraints: false,
 });
-Student.hasMany(ExamRegistration, {
+ExamRegistration.belongsTo(Student, {
   foreignKey: "std_id",
   targetKey: "std_id",
   constraints: false,
 });
-
 export default ExamRegistration;
