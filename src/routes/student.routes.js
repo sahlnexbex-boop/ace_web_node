@@ -8,6 +8,8 @@ import {
 } from "../controllers/student.controller.js";
 
 import { verifyAccessToken } from "../middlewares/verifyAccessToken.js";
+// import { verifyStudentToken } from "../middlewares/verifyStudentToken.js";
+import {verifyAccessOrStudentToken } from "../middlewares/verifyAccessOrStudentToken.js"
 import { dynamicUpload } from "../middlewares/upload.js";
 
 const router = express.Router();
@@ -25,7 +27,7 @@ router.post(
 
 router.get("/", verifyAccessToken, listStudents);
 
-router.get("/:id", verifyAccessToken, getStudentById);
+router.get("/:id", verifyAccessOrStudentToken, getStudentById);
 
 router.put(
   "/:id",

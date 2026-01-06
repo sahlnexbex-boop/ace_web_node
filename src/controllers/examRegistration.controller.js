@@ -5,6 +5,7 @@ import Student from "../models/student.model.js";
 import fs from "fs";
 import path from "path";
 import { PDFDocument, rgb } from "pdf-lib";
+import ExcelJS from "exceljs";
 
 //  SAFE FILENAME HELPER 
 const makeSafeFileName = (value = "") =>
@@ -62,7 +63,7 @@ export const generateHallTicket = async (req, res) => {
 
     const exam = registration.ScholarshipExam;
 
-    /* ================= LOAD TEMPLATE ================= */
+    // Load the PDF template
     const templatePath = path.join(
       process.cwd(),
       "src",
@@ -75,11 +76,10 @@ export const generateHallTicket = async (req, res) => {
     const pdfDoc = await PDFDocument.load(pdfBytes);
     const page = pdfDoc.getPages()[0];
 
-    /* ================= TEXT STYLE ================= */
     const fontSize = 10;
     const color = rgb(0, 0, 0);
 
-    /* ================= DRAW DATA ================= */
+    // Fill in the form data
     page.drawText(name || "-", { x: 200, y: 565, size: fontSize, color });
     page.drawText(mobile || "-", { x: 200, y: 540, size: fontSize, color });
     page.drawText(email || "-", { x: 200, y: 520, size: fontSize, color });
@@ -111,16 +111,13 @@ export const generateHallTicket = async (req, res) => {
       color,
     });
 
-    /* ================= GENERATE PDF ================= */
     const finalPdf = await pdfDoc.save();
 
-    /* ================= FILENAME ================= */
     const safeStudentName = makeSafeFileName(name);
     const safeExamName = makeSafeFileName(exam?.exam_title || "Exam");
 
     const fileName = `${safeStudentName}_${safeExamName}_Hall_Ticket.pdf`;
 
-    /* ================= RESPONSE ================= */
     res.set({
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename="${fileName}"`,
@@ -381,5 +378,110 @@ export const deleteExamRegistration = async (req, res) => {
     res.json({ message: "Exam registration deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+};
+
+// excel
+export const downloadExamRegistrationExcel = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      export: exportType, 
+    } = req.query;
+
+    let rows;
+
+    const queryOptions = {
+      include: [
+        {
+          model: ScholarshipExam,
+          attributes: ["exam_title"],
+          required: false,
+        },
+      ],
+      order: [["reg_id", "DESC"]],
+    };
+
+    //  FULL EXPORT
+    if (exportType === "all") {
+      rows = await ExamRegistration.findAll(queryOptions);
+    }
+    //  PAGINATED EXPORT
+    else {
+      const offset = (Number(page) - 1) * Number(limit);
+
+      rows = await ExamRegistration.findAll({
+        ...queryOptions,
+        limit: Number(limit),
+        offset,
+      });
+    }
+
+    // CREATE EXCEL
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Exam Registrations");
+
+    worksheet.columns = [
+      { header: "SI.No", key: "si_no", width: 8 },
+      { header: "Reg No", key: "registration_code", width: 20 },
+      { header: "Name", key: "name", width: 22 },
+      { header: "Exam", key: "exam", width: 30 },
+      { header: "Branch", key: "branch", width: 15 },
+      { header: "Phone No", key: "mobile", width: 18 },
+      { header: "Email", key: "email", width: 28 },
+      { header: "Date of Birth", key: "dob", width: 15 },
+      { header: "Address", key: "address", width: 30 },
+      { header: "ACE Student", key: "is_ace_std", width: 15 },
+      { header: "Status", key: "status", width: 12 },
+    ];
+
+    // Header styling
+    worksheet.getRow(1).font = { bold: true };
+
+    // Status mapper
+    const statusMap = {
+      0: "Inactive",
+      1: "Active",
+    };
+
+    rows.forEach((item, index) => {
+      worksheet.addRow({
+        si_no: index + 1,
+        registration_code: item.registration_code || "",
+        name: item.name || "",
+        exam: item.ScholarshipExam?.exam_title || "",
+        branch: item.branch || "",
+        mobile: item.mobile || "",
+        email: item.email || "",
+        dob: item.date_of_birth
+          ? new Date(item.date_of_birth).toLocaleDateString("en-GB")
+          : "",
+        address: item.address || "",
+        is_ace_std: item.is_ace_std ? "Yes" : "No",
+        status: statusMap[item.status] || "Active",
+      });
+    });
+
+    // RESPONSE HEADERS
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=exam_registrations_${
+        exportType === "all" ? "full" : `page_${page}`
+      }.xlsx`
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error("Exam Registration Excel export error:", error);
+    res.status(500).json({
+      message: "Failed to export exam registration data",
+    });
   }
 };

@@ -5,6 +5,7 @@ import {
   getRegistrationById,
   updateRegistration,
   deleteRegistration,
+  downloadOnlineRegistrationExcel,
 } from "../controllers/onlineRegistration.controller.js";
 
 import { verifyAccessToken } from "../middlewares/verifyAccessToken.js";
@@ -14,6 +15,12 @@ const router = express.Router();
 const { upload, handleUpload } = dynamicUpload(
   "registrations",
   "student_photo"
+);
+
+router.get(
+  "/download-excel",
+  verifyAccessToken,
+  downloadOnlineRegistrationExcel
 );
 
 router.post("/", upload.single("student_photo"), handleUpload, createRegistration);

@@ -6,6 +6,7 @@ import {
   updateExamRegistration,
   deleteExamRegistration,
   generateHallTicket,
+  downloadExamRegistrationExcel,
 } from "../controllers/examRegistration.controller.js";
 
 import { verifyAccessToken } from "../middlewares/verifyAccessToken.js";
@@ -18,6 +19,13 @@ router.post("/", createExamRegistration);
 
 // generate hall ticket
 router.get("/hallticket/:id", generateHallTicket);
+
+// excel- download
+router.get(
+  "/download-excel",
+  verifyAccessToken,
+  downloadExamRegistrationExcel
+);
 
 // ADMIN PROTECTED
 router.get("/", getExamRegistrations);

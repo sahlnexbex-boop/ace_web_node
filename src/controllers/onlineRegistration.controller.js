@@ -3,6 +3,7 @@ import CourseCategory from "../models/courseCategory.model.js";
 import Course from "../models/course.model.js";
 import { Op } from "sequelize";
 import { deleteFile } from "../utils/fileHelper.js";
+import ExcelJS from "exceljs";
 
 const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
 const phoneRegex = /^[0-9]{10}$/;
@@ -169,4 +170,112 @@ export const deleteRegistration = async (req, res) => {
   await reg.destroy();
 
   res.json({ message: "Deleted successfully" });
+};
+
+// excel
+export const downloadOnlineRegistrationExcel = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      export: exportType, 
+    } = req.query;
+
+    let rows;
+
+    const queryOptions = {
+      include: [
+        {
+          model: CourseCategory,
+          as: "department",
+          attributes: ["category_name"],
+        },
+        {
+          model: Course,
+          as: "course",
+          attributes: ["course_name"],
+        },
+      ],
+      order: [["registration_id", "DESC"]],
+    };
+
+    //  FULL EXPORT
+    if (exportType === "all") {
+      rows = await OnlineRegistration.findAll(queryOptions);
+    } 
+    //  PAGINATED EXPORT
+    else {
+      const offset = (Number(page) - 1) * Number(limit);
+
+      rows = await OnlineRegistration.findAll({
+        ...queryOptions,
+        limit: Number(limit),
+        offset,
+      });
+    }
+
+    // CREATE EXCEL
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Online Registrations");
+
+    worksheet.columns = [
+      { header: "Sl.No", key: "si_no", width: 8 },
+      { header: "Student Name", key: "student_name", width: 25 },
+      { header: "Branch", key: "branch", width: 18 },
+      { header: "Department", key: "department", width: 22 },
+      { header: "Course", key: "course", width: 22 },
+      { header: "Date of Birth", key: "dob", width: 15 },
+      { header: "Email", key: "email", width: 28 },
+      { header: "Phone No", key: "phone_no", width: 16 },
+      { header: "2nd Phone No", key: "second_phone_no", width: 18 },
+      { header: "Apply Status", key: "apply_status", width: 18 },
+    ];
+
+    // Header styling
+    worksheet.getRow(1).font = { bold: true };
+
+    // Apply status mapper (adjust if needed)
+    const applyStatusMap = {
+      pending: "Pending",
+      approved: "Approved",
+      rejected: "Rejected",
+    };
+
+    rows.forEach((item, index) => {
+      worksheet.addRow({
+        si_no: index + 1,
+        student_name: item.student_name || "",
+        branch: item.branch || "",
+        department: item.department?.category_name || "",
+        course: item.course?.course_name || "",
+        dob: item.date_of_birth
+          ? new Date(item.date_of_birth).toLocaleDateString("en-GB")
+          : "",
+        email: item.email || "",
+        phone_no: item.phone_number || "",
+        second_phone_no: item.second_phone_no || "",
+        apply_status:
+          applyStatusMap[item.apply_status] || item.apply_status || "Pending",
+      });
+    });
+
+    // RESPONSE HEADERS
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=online_registrations_${
+        exportType === "all" ? "full" : `page_${page}`
+      }.xlsx`
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error("Online Registration Excel export error:", error);
+    res.status(500).json({ message: "Failed to export registration data" });
+  }
 };
