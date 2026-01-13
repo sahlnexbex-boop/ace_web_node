@@ -2,6 +2,7 @@ import Blog from "../models/blogs.model.js";
 import { Op } from "sequelize";
 import { deleteFile } from "../utils/fileHelper.js";
 import Course from "../models/course.model.js";
+import { deslugify } from "../utils/slugify.js";
 
 const isUnsupportedFile = (mimetype) => {
   return !mimetype.startsWith("image/");
@@ -22,6 +23,12 @@ export const createBlog = async (req, res) => {
 
     if (!course_id)
       return res.status(400).json({ message: "course_id is required" });
+
+    if (blog_title) {
+      const existingBlog = await Blog.findOne({ where: { blog_title } });
+      if (existingBlog)
+        return res.status(400).json({ message: "Blog title already exists" });
+    }
 
     const courseExists = await Course.findByPk(course_id);
     if (!courseExists)
@@ -98,7 +105,47 @@ export const getBlogs = async (req, res) => {
   }
 };
 
-//  Get single
+// Get single blog by slug
+export const getBlogBySlug = async (req, res) => {
+  try {
+    const { slug } = req.params;
+
+    if (!slug) {
+      return res.status(400).json({ message: "Slug is required" });
+    }
+
+    const titleFromSlug = deslugify(slug);
+
+    const blog = await Blog.findOne({
+      where: {
+        blog_title: {
+          [Op.like]: `%${titleFromSlug}%`,
+        },
+        status: 1, 
+      },
+      include: [
+        {
+          model: Course,
+          as: "course",
+          attributes: ["course_id", "course_name"],
+        },
+      ],
+    });
+
+    if (!blog) {
+      return res.status(404).json({ message: "Blog not found" });
+    }
+
+    res.json({
+      message: "Blog fetched successfully",
+      data: blog,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+//  Get single by id
 export const getBlogById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -146,6 +193,15 @@ export const updateBlog = async (req, res) => {
 
     const blog = await Blog.findByPk(id);
     if (!blog) return res.status(404).json({ message: "Blog not found" });
+
+    // Duplicate Name Check
+    const duplicate = await Blog.findOne({
+      where: {
+        [Op.and]: [{ blog_id: { [Op.ne]: id } }, { blog_title }],
+      },
+    });
+    if (duplicate)
+      return res.status(400).json({ message: "Blog title already exists" });
 
     if (course_id) {
       const courseExists = await Course.findByPk(course_id);

@@ -6,6 +6,7 @@ import {
   getCourseById,
   updateCourse,
   deleteCourse,
+  getCourseBySlug,
 } from "../controllers/course.controller.js";
 import { dynamicUpload } from "../middlewares/upload.js";
 
@@ -21,6 +22,7 @@ const courseUpload = upload.fields([
 router.post("/", verifyAccessToken, courseUpload,handleUpload, createCourse);
 router.get("/", getCourses);
 router.get("/:id", getCourseById);
+router.get("/slug/:slug", getCourseBySlug);
 router.put("/:id", verifyAccessToken, courseUpload,handleUpload, updateCourse);
 router.delete("/:id", verifyAccessToken, deleteCourse);
 

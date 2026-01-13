@@ -2,6 +2,7 @@ import { Op } from "sequelize";
 import Course from "../models/course.model.js";
 import CourseCategory from "../models/courseCategory.model.js";
 import { deleteFile } from "../utils/fileHelper.js";
+import { deslugify, slugify } from "../utils/slugify.js";
 
 // Create Course
 export const createCourse = async (req, res) => {
@@ -172,7 +173,7 @@ export const getCourses = async (req, res) => {
   }
 };
 
-// single
+// single get by id
 export const getCourseById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -193,6 +194,48 @@ export const getCourseById = async (req, res) => {
       data: course,
     });
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// single get by slug
+export const getCourseBySlug = async (req, res) => {
+  try {
+    const { slug } = req.params;
+
+    if (!slug) {
+      return res.status(400).json({ message: "Slug is required" });
+    }
+
+    // Convert slug → readable name
+    const courseName = deslugify(slug);
+
+    const course = await Course.findOne({
+      where: {
+        course_name: {
+          [Op.like]: `%${courseName}%`,
+        },
+        status: 1,
+      },
+      include: [
+        {
+          model: CourseCategory,
+          as: "category",
+          attributes: ["category_id", "category_name"],
+        },
+      ],
+    });
+
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    res.json({
+      message: "Course fetched successfully",
+      data: course,
+    });
+  } catch (err) {
+    console.error("getCourseBySlug error:", err);
     res.status(500).json({ error: err.message });
   }
 };

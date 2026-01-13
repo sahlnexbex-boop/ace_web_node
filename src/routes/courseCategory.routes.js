@@ -7,6 +7,7 @@ import {
   getCategoryById,
   updateCategory,
   deleteCategory,
+  getCategoryBySlug,
 } from "../controllers/courseCategory.controller.js";
 
 const router = express.Router();
@@ -22,6 +23,7 @@ router.post(
 );
 router.get("/", getCategories);
 router.get("/:id", getCategoryById);
+router.get("/slug/:slug", getCategoryBySlug);
 router.put(
   "/:id",
   verifyAccessToken,

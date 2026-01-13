@@ -3,6 +3,7 @@ import { deleteFile } from "../utils/fileHelper.js";
 
 import CourseCategory from "../models/courseCategory.model.js";
 import CourseType from "../models/courseType.model.js";
+import { deslugify, slugify } from "../utils/slugify.js";
 
 // helper
 const isUnsupportedFile = (mimetype) => {
@@ -104,7 +105,7 @@ export const getCategories = async (req, res) => {
   }
 };
 
-// single
+// single get by id
 export const getCategoryById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -126,6 +127,36 @@ export const getCategoryById = async (req, res) => {
       data: category,
     });
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// get single category by slug (category_name)
+export const getCategoryBySlug = async (req, res) => {
+  try {
+    const { slug } = req.params;
+    if (!slug) {
+      return res.status(400).json({ message: "Slug is required" });
+    }
+    const categories = await CourseCategory.findAll({
+      where: { status: 1 },
+      include: [
+        {
+          model: CourseType,
+          as: "courseType",
+          attributes: ["type_id", "type_name"],
+        },
+      ],
+    });
+    const category = categories.find(
+      (cat) => slugify(cat.category_name) === slug
+    );
+    if (!category) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+    res.json({ message: "Category fetched successfully", data: category });
+  } catch (err) {
+    console.error("getCategoryBySlug error:", err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -174,12 +205,10 @@ export const updateCategory = async (req, res) => {
     }
 
     // ----- Update Fields -----
-    category.category_name =
-      category_name || category.category_name;
+    category.category_name = category_name || category.category_name;
     category.category_description =
       category_description || category.category_description;
-    category.course_type_id =
-      course_type_id || category.course_type_id;
+    category.course_type_id = course_type_id || category.course_type_id;
 
     category.status = [0, 1].includes(Number(status))
       ? Number(status)
