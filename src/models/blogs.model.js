@@ -34,12 +34,14 @@ const Blog = sequelize.define(
       type: DataTypes.JSON,
       allowNull: true,
     },
-
     course_id: {
       type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
     },
-
+    other_images: {
+      type: DataTypes.JSON, 
+      allowNull: true,
+    },
     status: {
       type: DataTypes.TINYINT,
       defaultValue: 1,
@@ -61,6 +63,10 @@ const Blog = sequelize.define(
   }
 );
 
-Blog.belongsTo(Course, { foreignKey: "course_id", as: "course", constraints: false });
+Blog.belongsTo(Course, {
+  foreignKey: "course_id",
+  as: "course",
+  constraints: false,
+});
 
 export default Blog;

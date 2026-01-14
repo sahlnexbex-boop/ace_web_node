@@ -34,7 +34,7 @@ import studentAuthRoutes from "./routes/studentAuth.routes.js";
 import studentRoutes from "./routes/student.routes.js";
 import scholarshipExamRoutes from "./routes/scholarshipExam.routes.js";
 import examRegistrationRoutes from "./routes/examRegistration.routes.js";
-
+import { startEditorCleanupJob } from "./utils/editorCleanup.job.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -42,12 +42,26 @@ const __dirname = path.dirname(__filename);
 dotenv.config();
 
 const app = express();
-app.use(cors());
-app.use(express.json());
 
-//  Serve files from project-root/uploads
+// CORS Configuration - MUST come before routes
+const corsOptions = {
+  origin: process.env.FRONTEND_URL || "http://localhost:3000", // Your Next.js URL
+  credentials: true,
+  optionsSuccessStatus: 200,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+};
+
+app.use(cors(corsOptions));
+
+// Body parsers
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Serve static files from uploads folder
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
+// Routes
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/course-types", courseTypeRoutes);
@@ -75,21 +89,22 @@ app.use("/api/rank-forum", rankForumRoutes);
 app.use("/api/scholarship-exam", scholarshipExamRoutes);
 app.use("/api/exam-registration", examRegistrationRoutes);
 
-
-//student routes
+// Student routes
 app.use("/api/student/auth", studentAuthRoutes);
 app.use("/api/student", studentRoutes);
+
+//  Start cron job
+startEditorCleanupJob();
 
 const PORT = process.env.PORT || 5000;
 
 sequelize
-  .sync({ alter: true })
+  .sync()
   .then(async () => {
     console.log(" Database connected");
 
     await runSeeder();
 
-    app.listen(PORT, () => console.log(` Server running on port ${PORT}`));
+    app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
   })
-  .catch((err) => console.error(" Database connection error:", err));
-
+  .catch((err) => console.error("❌ Database connection error:", err));

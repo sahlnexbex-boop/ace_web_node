@@ -20,7 +20,7 @@ Student.init(
     std_email: {
       type: DataTypes.STRING(150),
       allowNull: false,
-      unique: true,
+      unique: "idx_unique_std_email",
     },
 
     std_phone: {

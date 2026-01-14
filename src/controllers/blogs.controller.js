@@ -3,6 +3,13 @@ import { Op } from "sequelize";
 import { deleteFile } from "../utils/fileHelper.js";
 import Course from "../models/course.model.js";
 import { deslugify } from "../utils/slugify.js";
+import fs from "fs/promises";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 const isUnsupportedFile = (mimetype) => {
   return !mimetype.startsWith("image/");
@@ -248,5 +255,167 @@ export const deleteBlog = async (req, res) => {
     res.json({ message: "Blog deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+};
+
+export const uploadBlogImage = async (req, res) => {
+  try {
+    console.log(" Upload request received");
+    
+    if (!req.file) {
+      console.log(" No file in request");
+      return res.status(400).json({
+        error: "No image uploaded",
+      });
+    }
+
+    const imageUrl = `${process.env.SERVER_URL}/uploads/blogs/editor/${req.file.filename}`;
+    
+    console.log(" Image uploaded successfully:", imageUrl);
+
+    res.status(200).json({
+      url: imageUrl,
+      uploaded: true,
+    });
+  } catch (err) {
+    console.error(" Upload error:", err);
+    res.status(500).json({
+      error: err.message,
+      uploaded: false,
+    });
+  }
+};
+
+export const cleanupEditorImages = async (req, res) => {
+  try {
+    console.log("🧹 Cleanup request received");
+    console.log("Request body:", req.body);
+
+    let { imageUrls } = req.body;
+
+    if (!Array.isArray(imageUrls)) {
+      return res.status(400).json({
+        error: "Invalid request: imageUrls must be an array",
+      });
+    }
+
+    //  Remove empty or invalid values
+    imageUrls = imageUrls.filter(
+      (url) => typeof url === "string" && url.trim() !== ""
+    );
+
+    if (imageUrls.length === 0) {
+      return res.status(200).json({
+        success: true,
+        deletedFiles: [],
+        deletedCount: 0,
+      });
+    }
+
+    const deletedFiles = [];
+    const errors = [];
+
+    for (const imageUrl of imageUrls) {
+      try {
+        let filename;
+
+        try {
+          const urlObj = new URL(imageUrl);
+          filename = path.basename(urlObj.pathname);
+        } catch {
+          errors.push({ url: imageUrl, error: "Invalid URL" });
+          continue;
+        }
+
+        //  Correct uploads path (outside src)
+        const filePath = path.resolve(
+          __dirname,
+          "../../uploads/blogs/editor",
+          filename
+        );
+
+        console.log(" Checking:", filePath);
+
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+          deletedFiles.push(filename);
+          console.log(" Deleted:", filename);
+        } else {
+          errors.push({
+            url: imageUrl,
+            error: "File not found",
+            path: filePath,
+          });
+        }
+      } catch (err) {
+        errors.push({
+          url: imageUrl,
+          error: err.message,
+        });
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      deletedFiles,
+      deletedCount: deletedFiles.length,
+      errors: errors.length ? errors : undefined,
+    });
+  } catch (err) {
+    console.error(" Cleanup error:", err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+// Scheduled cleanup
+export const scheduledCleanup = async () => {
+  try {
+    console.log(" Running scheduled editor image cleanup...");
+
+    const editorDir = path.resolve(
+      __dirname,
+      "../../uploads/blogs/editor"
+    );
+
+    try {
+      await fs.access(editorDir);
+    } catch {
+      console.log(" Editor upload directory does not exist");
+      return;
+    }
+
+    const files = await fs.readdir(editorDir);
+    const now = Date.now();
+    let deletedCount = 0;
+
+    console.log(` Found ${files.length} files`);
+
+    for (const file of files) {
+      const filePath = path.join(editorDir, file);
+
+      try {
+        const stats = await fs.stat(filePath);
+        if (!stats.isFile()) continue;
+
+        const ageMs = now - stats.mtimeMs;
+
+        if (ageMs > MAX_AGE_MS) {
+          await fs.unlink(filePath);
+          deletedCount++;
+          const ageHours = Math.floor(ageMs / (1000 * 60 * 60));
+          console.log(` Deleted ${file} (${ageHours}h old)`);
+        }
+      } catch (err) {
+        console.error(` Failed to process ${file}:`, err.message);
+      }
+    }
+
+    console.log(
+      deletedCount
+        ? ` Cleanup complete: ${deletedCount} files removed`
+        : " Cleanup complete: No expired files"
+    );
+  } catch (err) {
+    console.error(" Scheduled cleanup fatal error:", err);
   }
 };
