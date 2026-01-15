@@ -14,8 +14,8 @@ import courseRoutes from "./routes/course.routes.js";
 import resultRoutes from "./routes/result.routes.js";
 import topperRoutes from "./routes/topper.routes.js";
 import enquiryRoutes from "./routes/enquiry.routes.js";
-import rankHoldersRoutes from "./routes/rankHolders.routes.js"
-import serviceRotes from "./routes/service.routes.js"
+import rankHoldersRoutes from "./routes/rankHolders.routes.js";
+import serviceRotes from "./routes/service.routes.js";
 import successStoriesRoutes from "./routes/successStories.routes.js";
 import testimonialRoutes from "./routes/testimonial.routes.js";
 import blogsRoutes from "./routes/blogs.routes.js";
@@ -42,19 +42,17 @@ const __dirname = path.dirname(__filename);
 dotenv.config();
 
 const app = express();
+app.use(
+  cors({
+    origin: [
+      process.env.FRONTEND_URL,
+    ],
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
-// CORS Configuration - MUST come before routes
-const corsOptions = {
-  origin: process.env.FRONTEND_URL || "http://localhost:3000", // Your Next.js URL
-  credentials: true,
-  optionsSuccessStatus: 200,
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-};
-
-app.use(cors(corsOptions));
-
-// Body parsers
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

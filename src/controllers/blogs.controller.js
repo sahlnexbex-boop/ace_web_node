@@ -1,8 +1,8 @@
 import Blog from "../models/blogs.model.js";
-import { Op } from "sequelize";
+import { Op, Sequelize } from "sequelize";
 import { deleteFile } from "../utils/fileHelper.js";
 import Course from "../models/course.model.js";
-import { deslugify } from "../utils/slugify.js";
+import { deslugify, slugify } from "../utils/slugify.js";
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -121,15 +121,9 @@ export const getBlogBySlug = async (req, res) => {
       return res.status(400).json({ message: "Slug is required" });
     }
 
-    const titleFromSlug = deslugify(slug);
-
-    const blog = await Blog.findOne({
-      where: {
-        blog_title: {
-          [Op.like]: `%${titleFromSlug}%`,
-        },
-        status: 1, 
-      },
+    // Fetch only active blogs
+    const blogs = await Blog.findAll({
+      where: { status: 1 },
       include: [
         {
           model: Course,
@@ -138,6 +132,11 @@ export const getBlogBySlug = async (req, res) => {
         },
       ],
     });
+
+    // Find matching blog by slugified title
+    const blog = blogs.find(
+      (item) => slugify(item.blog_title) === slug
+    );
 
     if (!blog) {
       return res.status(404).json({ message: "Blog not found" });
@@ -148,6 +147,7 @@ export const getBlogBySlug = async (req, res) => {
       data: blog,
     });
   } catch (err) {
+    console.error("Slug fetch error:", err);
     res.status(500).json({ error: err.message });
   }
 };

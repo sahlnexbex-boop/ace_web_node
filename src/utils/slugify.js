@@ -4,13 +4,13 @@ export function slugify(text) {
   return text
     .toLowerCase()
     .trim()
-    .replace(/[_\W]+/g, " ")
-    .trim()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9\s]/g, "")
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-");
 }
 
 export function deslugify(slug) {
   if (!slug) return "";
-  return slug.replace(/-/g, " ").toLowerCase();
+  return slug.replace(/-/g, " ");
 }
