@@ -1,6 +1,7 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/db.js";
 import Course from "./course.model.js";
+import Category from "./courseCategory.model.js";
 
 const Blog = sequelize.define(
   "Blog",
@@ -36,10 +37,10 @@ const Blog = sequelize.define(
     },
     course_id: {
       type: DataTypes.INTEGER.UNSIGNED,
-      allowNull: false,
+      allowNull: true,
     },
     other_images: {
-      type: DataTypes.JSON, 
+      type: DataTypes.JSON,
       allowNull: true,
     },
     status: {

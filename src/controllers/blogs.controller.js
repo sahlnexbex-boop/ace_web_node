@@ -2,6 +2,7 @@ import Blog from "../models/blogs.model.js";
 import { Op, Sequelize } from "sequelize";
 import { deleteFile } from "../utils/fileHelper.js";
 import Course from "../models/course.model.js";
+import Category from "../models/courseCategory.model.js";
 import { deslugify, slugify } from "../utils/slugify.js";
 import fs from "fs/promises";
 import path from "path";
@@ -28,29 +29,32 @@ export const createBlog = async (req, res) => {
       course_id,
     } = req.body;
 
-    if (!course_id)
-      return res.status(400).json({ message: "course_id is required" });
+    // if (!course_id)
+    //   return res.status(400).json({ message: "course_id is required" });
 
     if (blog_title) {
       const existingBlog = await Blog.findOne({ where: { blog_title } });
       if (existingBlog)
         return res.status(400).json({ message: "Blog title already exists" });
     }
+    
+    // if course id is available 
+    if (course_id) {
+      const courseExists = await Course.findByPk(course_id);
+      if (!courseExists)
+        return res.status(400).json({ message: "Invalid course_id" });
+    }
 
-    const courseExists = await Course.findByPk(course_id);
-    if (!courseExists)
-      return res.status(400).json({ message: "Invalid course_id" });
-
-    const blog_image = req.file
-      ? `/uploads/blogs/${req.file.filename}`
-      : null;
+    const blog_image = req.file ? `/uploads/blogs/${req.file.filename}` : null;
 
     if (!blog_title || !blog_author || !blog_content || !publishing_date) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
     if (req.file && isUnsupportedFile(req.file.mimetype)) {
-      return res.status(400).json({ message: "Invalid file type. Images only allowed" });
+      return res
+        .status(400)
+        .json({ message: "Invalid file type. Images only allowed" });
     }
 
     const parsedTags = tags ? JSON.parse(tags) : null;
@@ -62,7 +66,7 @@ export const createBlog = async (req, res) => {
       blog_content,
       publishing_date,
       tags: parsedTags,
-      course_id,     // ⭐ SAVE
+      course_id, // ⭐ SAVE
       status: [0, 1].includes(Number(status)) ? Number(status) : 1,
       created_by: req.user?.user_id || 0,
     });
@@ -128,15 +132,20 @@ export const getBlogBySlug = async (req, res) => {
         {
           model: Course,
           as: "course",
-          attributes: ["course_id", "course_name"],
+          attributes: ["course_id", "course_name", "course_category_id"],
+          include: [
+            {
+              model: Category,
+              as: "category",
+              attributes: ["category_id", "category_name"],
+            },
+          ],
         },
       ],
     });
 
     // Find matching blog by slugified title
-    const blog = blogs.find(
-      (item) => slugify(item.blog_title) === slug
-    );
+    const blog = blogs.find((item) => slugify(item.blog_title) === slug);
 
     if (!blog) {
       return res.status(404).json({ message: "Blog not found" });
@@ -191,12 +200,10 @@ export const updateBlog = async (req, res) => {
       publishing_date,
       tags,
       status,
-      course_id,     
+      course_id,
     } = req.body;
 
-    const newImage = req.file
-      ? `/uploads/blogs/${req.file.filename}`
-      : null;
+    const newImage = req.file ? `/uploads/blogs/${req.file.filename}` : null;
 
     const blog = await Blog.findByPk(id);
     if (!blog) return res.status(404).json({ message: "Blog not found" });
@@ -210,11 +217,17 @@ export const updateBlog = async (req, res) => {
     if (duplicate)
       return res.status(400).json({ message: "Blog title already exists" });
 
-    if (course_id) {
-      const courseExists = await Course.findByPk(course_id);
-      if (!courseExists)
-        return res.status(400).json({ message: "Invalid course_id" });
-      blog.course_id = course_id;
+    if (course_id !== undefined) {
+      // FormData sends empty string when removed
+      if (course_id === "" || course_id === null) {
+        blog.course_id = null;
+      } else {
+        const courseExists = await Course.findByPk(course_id);
+        if (!courseExists) {
+          return res.status(400).json({ message: "Invalid course_id" });
+        }
+        blog.course_id = course_id;
+      }
     }
 
     if (newImage && isUnsupportedFile(req.file.mimetype)) {
@@ -261,7 +274,7 @@ export const deleteBlog = async (req, res) => {
 export const uploadBlogImage = async (req, res) => {
   try {
     console.log(" Upload request received");
-    
+
     if (!req.file) {
       console.log(" No file in request");
       return res.status(400).json({
@@ -270,7 +283,7 @@ export const uploadBlogImage = async (req, res) => {
     }
 
     const imageUrl = `${process.env.SERVER_URL}/uploads/blogs/editor/${req.file.filename}`;
-    
+
     console.log(" Image uploaded successfully:", imageUrl);
 
     res.status(200).json({
@@ -372,10 +385,7 @@ export const scheduledCleanup = async () => {
   try {
     console.log(" Running scheduled editor image cleanup...");
 
-    const editorDir = path.resolve(
-      __dirname,
-      "../../uploads/blogs/editor"
-    );
+    const editorDir = path.resolve(__dirname, "../../uploads/blogs/editor");
 
     try {
       await fs.access(editorDir);
