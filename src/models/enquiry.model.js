@@ -1,5 +1,6 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/db.js";
+import Course from "./course.model.js";
 
 const Enquiry = sequelize.define(
   "enquiries",
@@ -30,6 +31,10 @@ const Enquiry = sequelize.define(
       allowNull: false,
       comment: "1: General, 2: Course, 3: Event, 4: Other",
     },
+    course_id: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: true,
+    },
     submit_date: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
@@ -53,5 +58,11 @@ const Enquiry = sequelize.define(
     updatedAt: "updated_at",
   }
 );
+
+Enquiry.belongsTo(Course, {
+  foreignKey: "course_id",
+  as: "course",
+  constraints: false,
+});
 
 export default Enquiry;
