@@ -34,6 +34,8 @@ import studentAuthRoutes from "./routes/studentAuth.routes.js";
 import studentRoutes from "./routes/student.routes.js";
 import scholarshipExamRoutes from "./routes/scholarshipExam.routes.js";
 import examRegistrationRoutes from "./routes/examRegistration.routes.js";
+import tutionRoutes from "./routes/tution.routes.js";
+import tutionRegistrationRoutes from "./routes/tutionRegistration.routes.js";
 import { startEditorCleanupJob } from "./utils/editorCleanup.job.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -86,6 +88,8 @@ app.use("/api/online-registration", onlineRegistrationRoutes);
 app.use("/api/rank-forum", rankForumRoutes);
 app.use("/api/scholarship-exam", scholarshipExamRoutes);
 app.use("/api/exam-registration", examRegistrationRoutes);
+app.use("/api/tutions", tutionRoutes);
+app.use("/api/tution-registration", tutionRegistrationRoutes);
 
 // Student routes
 app.use("/api/student/auth", studentAuthRoutes);
@@ -97,7 +101,7 @@ startEditorCleanupJob();
 const PORT = process.env.PORT || 5000;
 
 sequelize
-  .sync({ alter: true })
+  .sync()
   .then(async () => {
     console.log(" Database connected");
 

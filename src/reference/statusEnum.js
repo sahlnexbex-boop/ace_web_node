@@ -35,3 +35,11 @@ const based_type = [
     2 = "Category",
 ]
 
+const button_type = [
+    1 = "For Admission",
+    2 = "For Enquiry",
+    3 = "For Tuition",
+    4 = "For Scholarship",
+    5 = "For Interview",
+]
+

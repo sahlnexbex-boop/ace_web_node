@@ -26,6 +26,11 @@ const Carousel = sequelize.define(
       allowNull: true,
       comment: "Description",
     },
+    badge_text: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      comment: "Small badge/label text shown on the banner",
+    },
     carousel_file: {
       type: DataTypes.STRING(500),
       allowNull: true,
@@ -36,11 +41,26 @@ const Carousel = sequelize.define(
       allowNull: true,
       comment: "Mobile File (Image or Video)",
     },
-    // button_type: {
-    //   type: DataTypes.INTEGER,
-    //   allowNull: true,
-    //   comment: "Button Type (1 = Online Registration, 2 = Explore Now)",
-    // },
+    button_type_1: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      comment: "1 to 5",
+    },
+    button_1_link: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      comment: "Link",
+    },
+    button_type_2: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      comment: "1 to 5",
+    },
+    button_2_link: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      comment: "Link",
+    },
     status: {
       type: DataTypes.TINYINT,
       allowNull: false,

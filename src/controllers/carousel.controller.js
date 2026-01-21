@@ -10,28 +10,62 @@ const isUnsupportedFile = (mimetype) => {
   );
 };
 
+const parseButtonType = (value, fieldName) => {
+  if (value === undefined) return undefined; // not provided
+  if (value === null || value === "") return null; // clear
+
+  const num = Number(value);
+  if (![1, 2, 3, 4, 5].includes(num)) {
+    throw new Error(`${fieldName} must be between 1 and 5`);
+  }
+  return num;
+};
+
 // create
 export const createCarousel = async (req, res) => {
   try {
-    const { carousel_title, carousel_sec_title, carousel_description, status, } = req.body;
+    const {
+      carousel_title,
+      carousel_sec_title,
+      carousel_description,
+      badge_text,
+      status,
+      button_type_1,
+      button_1_link,
+      button_type_2,
+      button_2_link,
+    } = req.body;
 
     const file1 = req.files?.carousel_file?.[0];
     const file2 = req.files?.carousel_mobile_file?.[0];
 
     if (!file1) {
-      return res.status(400).json({ message: "Missing required field: carousel_file" });
+      return res
+        .status(400)
+        .json({ message: "Missing required field: carousel_file" });
     }
-    if (isUnsupportedFile(req.files.carousel_file[0].mimetype)) {
-      return res.status(400).json({ message: "Invalid file type. Only images and videos are allowed." });
+    if (isUnsupportedFile(file1.mimetype)) {
+      return res.status(400).json({
+        message: "Invalid file type. Only images and videos are allowed.",
+      });
     }
 
-    if (file2 && isUnsupportedFile(req.files.carousel_mobile_file[0].mimetype)) {
-      return res.status(400).json({ message: "Invalid mobile file type. Only images and videos are allowed." });
+    if (file2 && isUnsupportedFile(file2.mimetype)) {
+      return res.status(400).json({
+        message:
+          "Invalid mobile file type. Only images and videos are allowed.",
+      });
     }
 
-    // if(button_type !== "1" && button_type !== "2") {
-    //   return res.status(400).json({ message: "Invalid button type. Only 1 and 2 are allowed." });
-    // }
+    // Validate button types (1–5 only)
+    let parsedButtonType1;
+    let parsedButtonType2;
+    try {
+      parsedButtonType1 = parseButtonType(button_type_1, "button_type_1");
+      parsedButtonType2 = parseButtonType(button_type_2, "button_type_2");
+    } catch (e) {
+      return res.status(400).json({ message: e.message });
+    }
 
     const carousel_file = `/uploads/carousel/${file1.filename}`;
     const carousel_mobile_file = file2
@@ -42,9 +76,13 @@ export const createCarousel = async (req, res) => {
       carousel_title,
       carousel_sec_title,
       carousel_description,
+      badge_text: badge_text || null,
       carousel_file,
       carousel_mobile_file,
-      // button_type: Number(button_type),
+      button_type_1: parsedButtonType1 ?? null,
+      button_1_link: button_1_link || null,
+      button_type_2: parsedButtonType2 ?? null,
+      button_2_link: button_2_link || null,
       status: [0, 1].includes(Number(status)) ? Number(status) : 1,
       created_by: req.user?.user_id || 0,
     });
@@ -104,61 +142,94 @@ export const getCarouselById = async (req, res) => {
 export const updateCarousel = async (req, res) => {
   try {
     const { id } = req.params;
-    const { carousel_title, carousel_sec_title, carousel_description, status, } = req.body;
+    const {
+      carousel_title,
+      carousel_sec_title,
+      carousel_description,
+      badge_text,
+      status,
+      button_type_1,
+      button_1_link,
+      button_type_2,
+      button_2_link,
+    } = req.body;
 
     const file1 = req.files?.carousel_file?.[0];
     const file2 = req.files?.carousel_mobile_file?.[0];
 
-    //  FIX: validate using file1.mimetype instead of req.files.carousel_file.mimetype
+    // validate using file1.mimetype instead of req.files.carousel_file.mimetype
     if (file1 && isUnsupportedFile(file1.mimetype)) {
       return res.status(400).json({
-        message: "Invalid file type. Only images and videos are allowed."
+        message: "Invalid file type. Only images and videos are allowed.",
       });
     }
 
-    //  FIX: validate using file2.mimetype
+    // validate using file2.mimetype
     if (file2 && isUnsupportedFile(file2.mimetype)) {
       return res.status(400).json({
-        message: "Invalid mobile file type. Only images and videos are allowed."
+        message:
+          "Invalid mobile file type. Only images and videos are allowed.",
       });
     }
 
-    // if(button_type !== "1" && button_type !== "2") {
-    //   return res.status(400).json({ message: "Invalid button type. Only 1 and 2 are allowed." });
-    // }
+    // Validate button types (1–5 only) if provided
+    let parsedButtonType1;
+    let parsedButtonType2;
+    try {
+      parsedButtonType1 = parseButtonType(button_type_1, "button_type_1");
+      parsedButtonType2 = parseButtonType(button_type_2, "button_type_2");
+    } catch (e) {
+      return res.status(400).json({ message: e.message });
+    }
 
-    const newFile = file1
-      ? `/uploads/carousel/${file1.filename}`
-      : null;
+    const newFile = file1 ? `/uploads/carousel/${file1.filename}` : null;
 
     const newMobileFile = file2
       ? `/uploads/carousel/${file2.filename}`
       : null;
 
     const carousel = await Carousel.findByPk(id);
-    if (!carousel) return res.status(404).json({ message: "Carousel not found" });
+    if (!carousel)
+      return res.status(404).json({ message: "Carousel not found" });
 
-    //  delete old files only if new files exist
+    // delete old files only if new files exist
     if (newFile && carousel.carousel_file) deleteFile(carousel.carousel_file);
-    if (newMobileFile && carousel.carousel_mobile_file) deleteFile(carousel.carousel_mobile_file);
+    if (newMobileFile && carousel.carousel_mobile_file)
+      deleteFile(carousel.carousel_mobile_file);
 
-    carousel.carousel_title = carousel_title || null;
-    carousel.carousel_sec_title = carousel_sec_title || null;
-    carousel.carousel_description = carousel_description || null;
+    carousel.carousel_title = carousel_title ?? carousel.carousel_title;
+    carousel.carousel_sec_title =
+      carousel_sec_title ?? carousel.carousel_sec_title;
+    carousel.carousel_description =
+      carousel_description ?? carousel.carousel_description;
+    carousel.badge_text =
+      badge_text !== undefined ? badge_text || null : carousel.badge_text;
 
     carousel.status = [0, 1].includes(Number(status))
       ? Number(status)
       : carousel.status;
 
     carousel.carousel_file = newFile || carousel.carousel_file;
-    carousel.carousel_mobile_file = newMobileFile || carousel.carousel_mobile_file;
+    carousel.carousel_mobile_file =
+      newMobileFile || carousel.carousel_mobile_file;
+
+    // Button types & links
+    if (parsedButtonType1 !== undefined) {
+      carousel.button_type_1 = parsedButtonType1;
+    }
+    if (parsedButtonType2 !== undefined) {
+      carousel.button_type_2 = parsedButtonType2;
+    }
+
+    if (button_1_link !== undefined) {
+      carousel.button_1_link = button_1_link || null;
+    }
+    if (button_2_link !== undefined) {
+      carousel.button_2_link = button_2_link || null;
+    }
 
     carousel.updated_by = req.user?.user_id || 0;
     carousel.updated_at = new Date();
-
-    // if (button_type) {
-    //   carousel.button_type = Number(button_type);
-    // }
 
     await carousel.save();
 
@@ -166,7 +237,6 @@ export const updateCarousel = async (req, res) => {
       message: "Carousel updated successfully",
       data: carousel,
     });
-
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
