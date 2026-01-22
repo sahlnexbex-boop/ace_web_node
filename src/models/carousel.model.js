@@ -31,6 +31,11 @@ const Carousel = sequelize.define(
       allowNull: true,
       comment: "Small badge/label text shown on the banner",
     },
+    badge_url: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+      comment: "URL link for the badge",
+    },
     carousel_file: {
       type: DataTypes.STRING(500),
       allowNull: true,

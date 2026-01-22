@@ -29,6 +29,7 @@ export const createCarousel = async (req, res) => {
       carousel_sec_title,
       carousel_description,
       badge_text,
+      badge_url,
       status,
       button_type_1,
       button_1_link,
@@ -77,6 +78,7 @@ export const createCarousel = async (req, res) => {
       carousel_sec_title,
       carousel_description,
       badge_text: badge_text || null,
+      badge_url: badge_url || null,
       carousel_file,
       carousel_mobile_file,
       button_type_1: parsedButtonType1 ?? null,
@@ -147,6 +149,7 @@ export const updateCarousel = async (req, res) => {
       carousel_sec_title,
       carousel_description,
       badge_text,
+      badge_url,
       status,
       button_type_1,
       button_1_link,
@@ -204,6 +207,8 @@ export const updateCarousel = async (req, res) => {
       carousel_description ?? carousel.carousel_description;
     carousel.badge_text =
       badge_text !== undefined ? badge_text || null : carousel.badge_text;
+    carousel.badge_url =
+      badge_url !== undefined ? badge_url || null : carousel.badge_url;
 
     carousel.status = [0, 1].includes(Number(status))
       ? Number(status)
