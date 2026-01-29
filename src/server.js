@@ -101,7 +101,7 @@ startEditorCleanupJob();
 const PORT = process.env.PORT || 5000;
 
 sequelize
-  .sync({ alter: true })
+  .sync()
   .then(async () => {
     console.log(" Database connected");
 

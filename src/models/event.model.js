@@ -17,6 +17,11 @@ const Event = sequelize.define(
       type: DataTypes.STRING(500),
       allowNull: true,
     },
+    other_images: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: null,
+    },
     event_description: {
       type: DataTypes.TEXT,
       allowNull: false,

@@ -8,6 +8,21 @@ const isUnsupportedFile = (mimetype) => {
   return !mimetype.startsWith("image/");
 };
 
+// normalize values stored in DB to an array
+const normalizeToArray = (val) => {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  if (typeof val === "string") {
+    try {
+      const parsed = JSON.parse(val);
+      return Array.isArray(parsed) ? parsed : [parsed];
+    } catch (e) {
+      return [val];
+    }
+  }
+  return [val];
+};
+
 // create
 export const createEvent = async (req, res) => {
   try {
@@ -19,14 +34,28 @@ export const createEvent = async (req, res) => {
       date_time,
       status,
     } = req.body;
-    const event_image = req.file
-      ? `/uploads/events/${req.file.filename}`
+    const event_image = req.files?.event_image?.[0]
+      ? `/uploads/events/${req.files.event_image[0].filename}`
+      : null;
+    const otherFiles = req.files?.other_images || req.files?.others_images || null;
+    const other_images = otherFiles
+      ? otherFiles.map((file) => `/uploads/events/${file.filename}`)
       : null;
 
-    if (req.file && isUnsupportedFile(req.file.mimetype)) {
+    if (req.files?.event_image?.[0] && isUnsupportedFile(req.files.event_image[0].mimetype)) {
       return res.status(400).json({
-        message: "Invalid file type. Only image files are allowed.",
+        message: "Invalid file type for event_image. Only image files are allowed.",
       });
+    }
+
+    if (otherFiles) {
+      for (const file of otherFiles) {
+        if (isUnsupportedFile(file.mimetype)) {
+          return res.status(400).json({
+            message: "Invalid file type in other_images. Only image files are allowed.",
+          });
+        }
+      }
     }
 
     if (
@@ -52,6 +81,7 @@ export const createEvent = async (req, res) => {
       event_location,
       date_time,
       event_image,
+      other_images,
       status: [0, 1].includes(Number(status)) ? Number(status) : 1,
       created_by: req.user?.user_id || 0,
     });
@@ -121,8 +151,12 @@ export const updateEvent = async (req, res) => {
       date_time,
       status,
     } = req.body;
-    const newImage = req.file
-      ? `/uploads/events/${req.file.filename}`
+    const newImage = req.files?.event_image?.[0]
+      ? `/uploads/events/${req.files.event_image[0].filename}`
+      : null;
+    const newOtherFiles = req.files?.other_images || req.files?.others_images || null;
+    const newOtherImages = newOtherFiles
+      ? newOtherFiles.map((file) => `/uploads/events/${file.filename}`)
       : null;
 
     const event = await Event.findByPk(id);
@@ -134,13 +168,27 @@ export const updateEvent = async (req, res) => {
         .json({ message: "Invalid event_type. Only 1 or 2 are allowed." });
     }
 
-    if (newImage && isUnsupportedFile(req.file.mimetype)) {
+    if (req.files?.event_image?.[0] && isUnsupportedFile(req.files.event_image[0].mimetype)) {
       return res.status(400).json({
-        message: "Invalid file type. Only image files are allowed.",
+        message: "Invalid file type for event_image. Only image files are allowed.",
       });
     }
 
+    if (newOtherFiles) {
+      for (const file of newOtherFiles) {
+        if (isUnsupportedFile(file.mimetype)) {
+          return res.status(400).json({
+            message: "Invalid file type in other_images. Only image files are allowed.",
+          });
+        }
+      }
+    }
+
     if (newImage && event.event_image) deleteFile(event.event_image);
+    if (newOtherImages && event.other_images) {
+      const prev = normalizeToArray(event.other_images);
+      prev.forEach((imagePath) => deleteFile(imagePath));
+    }
 
     event.event_title = event_title || event.event_title;
     event.event_description = event_description || event.event_description;
@@ -151,6 +199,7 @@ export const updateEvent = async (req, res) => {
       ? Number(status)
       : event.status;
     event.event_image = newImage || event.event_image;
+    event.other_images = newOtherImages || event.other_images;
     event.updated_by = req.user?.user_id || 0;
     event.updated_at = new Date();
 
@@ -170,6 +219,10 @@ export const deleteEvent = async (req, res) => {
     if (!event) return res.status(404).json({ message: "Event not found" });
 
     if (event.event_image) deleteFile(event.event_image);
+    if (event.other_images) {
+      const imgs = normalizeToArray(event.other_images);
+      imgs.forEach((imagePath) => deleteFile(imagePath));
+    }
     await event.destroy();
 
     res.json({ message: "Event deleted successfully" });
