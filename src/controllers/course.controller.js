@@ -2,7 +2,46 @@ import { Op } from "sequelize";
 import Course from "../models/course.model.js";
 import CourseCategory from "../models/courseCategory.model.js";
 import { deleteFile } from "../utils/fileHelper.js";
-import { deslugify, slugify } from "../utils/slugify.js";
+import { deslugify } from "../utils/slugify.js";
+
+// Helpers
+const normalizeCourseType = (value) => {
+  if (value === undefined || value === null || value === "") return null;
+
+  let asArray;
+
+  if (Array.isArray(value)) {
+    asArray = value;
+  } else if (typeof value === "string") {
+    const trimmed = value.trim();
+    // Try JSON first: "[1,2]"
+    if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        asArray = Array.isArray(parsed) ? parsed : [parsed];
+      } catch {
+        // Fallback to comma separated
+        asArray = trimmed.split(",");
+      }
+    } else {
+      // "1" or "1,2"
+      asArray = trimmed.split(",");
+    }
+  } else {
+    asArray = [value];
+  }
+
+  // Normalize to numbers and dedupe
+  const normalized = [...new Set(
+    asArray
+      .map((v) => Number(v))
+      .filter((v) => !Number.isNaN(v))
+  )];
+
+  if (!normalized.length) return null;
+
+  return normalized;
+};
 
 // Create Course
 export const createCourse = async (req, res) => {
@@ -17,20 +56,44 @@ export const createCourse = async (req, res) => {
       course_overview,
       course_syllabus,
       course_study_material,
+      cour_type,   // optional; backend legacy name
+      course_type, // optional; what frontend is actually sending
       status,
     } = req.body;
 
-    if (!course_name || !course_category_id)
-      return res.status(400).json({ message: "Course name and category required" });
+    if (!course_name || !course_category_id) {
+      return res
+        .status(400)
+        .json({ message: "course_name and course_category_id are required" });
+    }
 
-    const exists = await Course.findOne({ where: { course_name } });
-    if (exists) return res.status(400).json({ message: "Course already exists" });
+    const existing = await Course.findOne({ where: { course_name } });
+    if (existing) {
+      return res.status(400).json({ message: "Course name already exists" });
+    }
 
     const category = await CourseCategory.findByPk(course_category_id);
-    if (!category) return res.status(400).json({ message: "Invalid category" });
+    if (!category) {
+      return res.status(400).json({ message: "Invalid course_category_id" });
+    }
 
-    if (course_rating && Number(course_rating) > 5)
+    // rating validation
+    let normalizedRating = Number(course_rating || 0);
+    if (Number.isNaN(normalizedRating) || normalizedRating < 0) {
+      normalizedRating = 0;
+    }
+    if (normalizedRating > 5) {
       return res.status(400).json({ message: "Max rating is 5" });
+    }
+
+    // cour_type / course_type handling (accept [1] or [1,2] etc.)
+    const rawCourseType = cour_type ?? course_type;
+    const courseType = normalizeCourseType(rawCourseType);
+    if (!courseType) {
+      return res
+        .status(400)
+        .json({ message: "Invalid cour_type. Expected [1] or [1,2]." });
+    }
 
     let course_image = null;
     if (req.files?.course_image) {
@@ -97,7 +160,7 @@ export const createCourse = async (req, res) => {
     const newCourse = await Course.create({
       course_name,
       course_description,
-      course_rating: course_rating || 0,
+      course_rating: normalizedRating,
       course_category_id,
       course_duration,
       course_fee,
@@ -107,6 +170,7 @@ export const createCourse = async (req, res) => {
       course_image,
       course_syllabus_file,
       course_questions_file,
+      course_type: courseType, // stored as JSON array in DB
       status: [0, 1].includes(Number(status)) ? Number(status) : 1,
       created_by: req.user?.user_id || 0,
     });
@@ -254,6 +318,8 @@ export const updateCourse = async (req, res) => {
       course_overview,
       course_syllabus,
       course_study_material,
+      cour_type,   // optional; legacy name
+      course_type, // optional; what frontend is actually sending
       status,
     } = req.body;
 
@@ -355,8 +421,29 @@ export const updateCourse = async (req, res) => {
 
     course.course_name = course_name || course.course_name;
     course.course_description = course_description || course.course_description;
-    course.course_rating =
-      course_rating && course_rating <= 5 ? course_rating : course.course_rating;
+
+    // rating validation
+    if (course_rating !== undefined) {
+      let updatedRating = Number(course_rating);
+      if (Number.isNaN(updatedRating) || updatedRating < 0) {
+        updatedRating = course.course_rating;
+      } else if (updatedRating > 5) {
+        return res.status(400).json({ message: "Max rating is 5" });
+      }
+      course.course_rating = updatedRating;
+    }
+
+    // cour_type / course_type handling on update
+    const rawCourseType = cour_type ?? course_type;
+    if (rawCourseType !== undefined) {
+      const courseType = normalizeCourseType(rawCourseType);
+      if (!courseType) {
+        return res
+          .status(400)
+          .json({ message: "Invalid cour_type. Expected [1] or [1,2]." });
+      }
+      course.course_type = courseType;
+    }
     course.course_category_id = course_category_id || course.course_category_id;
     course.course_duration = course_duration || course.course_duration;
     course.course_fee = course_fee || course.course_fee;
@@ -406,8 +493,6 @@ export const deleteCourse = async (req, res) => {
       const newCount = Math.max((category.total_courses || 0) - 1, 0);
       await category.update({ total_courses: newCount });
     }
-
-    res.json({ message: "Course deleted successfully" });
   } catch (err) {
     console.error("Error in deleteCourse:", err);
     res.status(500).json({ error: err.message });

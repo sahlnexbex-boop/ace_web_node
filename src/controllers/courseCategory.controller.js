@@ -1,8 +1,10 @@
 import { Op } from "sequelize";
+import sequelize from "../config/db.js";
 import { deleteFile } from "../utils/fileHelper.js";
 
 import CourseCategory from "../models/courseCategory.model.js";
 import CourseType from "../models/courseType.model.js";
+import Course from "../models/course.model.js";
 import { deslugify, slugify } from "../utils/slugify.js";
 
 // helper
@@ -62,7 +64,8 @@ export const createCategory = async (req, res) => {
 // list
 export const getCategories = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = "", type_id, status } = req.query;
+    const { page = 1, limit = 10, search = "", type_id, status, course_type } =
+      req.query;
     const offset = (page - 1) * limit;
 
     const where = {};
@@ -77,6 +80,45 @@ export const getCategories = async (req, res) => {
 
     if (status !== undefined && (status === "0" || status === "1")) {
       where.status = Number(status);
+    }
+
+    // Filter categories that have at least one course with matching course_type (1 or 2)
+    if (course_type !== undefined && course_type !== "") {
+      const courseTypeVal = Number(course_type);
+      if (![1, 2].includes(courseTypeVal)) {
+        return res.status(400).json({
+          message: "course_type must be 1 or 2",
+        });
+      }
+      const jsonVal = courseTypeVal === 1 ? sequelize.literal("'1'") : sequelize.literal("'2'");
+      const matchingCourses = await Course.findAll({
+        attributes: ["course_category_id"],
+        where: {
+          status: 1,
+          [Op.and]: [
+            sequelize.where(
+              sequelize.fn(
+                "JSON_CONTAINS",
+                sequelize.col("course_type"),
+                jsonVal,
+                sequelize.literal("'$'")
+              ),
+              1
+            ),
+          ],
+        },
+        raw: true,
+      });
+      const categoryIds = [...new Set(matchingCourses.map((c) => c.course_category_id).filter(Boolean))];
+      if (categoryIds.length === 0) {
+        return res.json({
+          total: 0,
+          page: Number(page),
+          totalPages: 0,
+          data: [],
+        });
+      }
+      where.category_id = { [Op.in]: categoryIds };
     }
 
     const { rows, count } = await CourseCategory.findAndCountAll({

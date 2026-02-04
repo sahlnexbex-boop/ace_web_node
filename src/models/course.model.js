@@ -23,6 +23,8 @@ const Course = sequelize.define(
     course_overview: { type: DataTypes.STRING(1000) },
     course_syllabus: { type: DataTypes.STRING(1000) },
     course_study_material: { type: DataTypes.STRING(1000) },
+    // JSON array of course types, e.g. [1] or [1,2]
+    course_type: { type: DataTypes.JSON },
     course_syllabus_file: { type: DataTypes.STRING(500) },
     course_questions_file: { type: DataTypes.STRING(500) },
     course_image: { type: DataTypes.STRING(500) },
