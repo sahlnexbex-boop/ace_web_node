@@ -13,9 +13,26 @@ const __dirname = path.dirname(__filename);
  */
 export const dynamicUpload = (folderName, fieldNames) => {
   const storage = multer.memoryStorage();
+
   const upload = multer({
     storage,
-    limits: { fileSize: 15 * 1024 * 1024 }, // 15 MB limit
+    limits: {
+      fileSize: 50 * 1024 * 1024 // 50 MB max (will be validated per file type)
+    },
+    fileFilter: (req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase();
+      const videoExtensions = ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.mkv', '.webm', '.m4v'];
+      const isVideo = videoExtensions.includes(ext);
+
+      // Videos: 50MB, Others: 15MB
+      const maxSize = isVideo ? 50 * 1024 * 1024 : 15 * 1024 * 1024;
+
+      // Store the limit for later validation
+      if (!req.fileSizeLimits) req.fileSizeLimits = {};
+      req.fileSizeLimits[file.fieldname] = maxSize;
+
+      cb(null, true);
+    }
   });
 
   const handleUpload = async (req, res, next) => {
@@ -28,11 +45,21 @@ export const dynamicUpload = (folderName, fieldNames) => {
       // 🧠 Helper function to compress and save one file
       const processFile = async (file) => {
         const ext = path.extname(file.originalname).toLowerCase();
+        const videoExtensions = ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.mkv', '.webm', '.m4v'];
+        const isVideo = videoExtensions.includes(ext);
+
+        // Validate file size based on type
+        const maxSize = isVideo ? 50 * 1024 * 1024 : 15 * 1024 * 1024;
+        if (file.size > maxSize) {
+          const maxSizeMB = isVideo ? 50 : 15;
+          throw new Error(`File ${file.originalname} exceeds ${maxSizeMB}MB limit`);
+        }
+
         const random = Math.random().toString(36).substring(2, 8);
         const filename = `${file.fieldname}-${Date.now()}-${random}${ext}`;
         const filepath = path.join(uploadPath, filename);
 
-        // Skip non-images
+        // Skip non-images (including videos)
         if (![".jpg", ".jpeg", ".png", ".webp"].includes(ext)) {
           fs.writeFileSync(filepath, file.buffer);
           return { ...file, filename, path: filepath };
