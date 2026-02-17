@@ -36,6 +36,8 @@ import scholarshipExamRoutes from "./routes/scholarshipExam.routes.js";
 import examRegistrationRoutes from "./routes/examRegistration.routes.js";
 import tutionRoutes from "./routes/tution.routes.js";
 import tutionRegistrationRoutes from "./routes/tutionRegistration.routes.js";
+import dynamicEventRoutes from "./routes/dynamicEvent.routes.js";
+import dynamicFormSubmissionRoutes from "./routes/dynamicFormSubmission.routes.js";
 import { startEditorCleanupJob } from "./utils/editorCleanup.job.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -90,6 +92,8 @@ app.use("/api/scholarship-exam", scholarshipExamRoutes);
 app.use("/api/exam-registration", examRegistrationRoutes);
 app.use("/api/tutions", tutionRoutes);
 app.use("/api/tution-registration", tutionRegistrationRoutes);
+app.use("/api/dynamic-events", dynamicEventRoutes);
+app.use("/api/dynamic-submissions", dynamicFormSubmissionRoutes);
 
 // Student routes
 app.use("/api/student/auth", studentAuthRoutes);
@@ -101,7 +105,7 @@ startEditorCleanupJob();
 const PORT = process.env.PORT || 5000;
 
 sequelize
-  .sync({ alter: true })
+  .sync()
   .then(async () => {
     console.log(" Database connected");
 
