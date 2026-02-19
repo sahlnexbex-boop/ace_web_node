@@ -10,7 +10,7 @@ const DynamicFormSubmissions = sequelize.define(
             primaryKey: true,
         },
         dynmc_event_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.INTEGER.UNSIGNED,
             allowNull: false,
         },
         status: {

@@ -49,7 +49,6 @@ const app = express();
 app.use(
   cors({
     origin: [
-      "https://devui.aceonline.app", // for testing
       process.env.FRONTEND_URL
     ],
     credentials: true,
