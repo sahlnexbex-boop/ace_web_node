@@ -10,11 +10,11 @@ const dynamic_submit_values = sequelize.define(
       primaryKey: true,
     },
     submission_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
     },
     form_field_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
     },
     form_field_value: {
