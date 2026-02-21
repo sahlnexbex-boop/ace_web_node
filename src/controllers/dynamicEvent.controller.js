@@ -101,37 +101,46 @@ export const createDynamicEvent = async (req, res) => {
 // Get All Dynamic Events with Pagination and Search
 export const getAllDynamicEvents = async (req, res) => {
     try {
-        const { page = 1, limit = 10, search = "" } = req.query;
+        const { page = 1, limit = 10, search = "", status } = req.query;
+
         const offset = (page - 1) * limit;
 
-        const whereCondition = {
-            status: 1, // Assuming we only want active events by default, or remove if not needed
-        };
+        const where = {};
 
+        // ✅ STATUS FILTER (same behavior as blogs)
+        if (status === "0" || status === "1") {
+            where.status = parseInt(status);
+        }
+
+        // ✅ SEARCH FILTER
         if (search) {
-            whereCondition[Op.or] = [
+            where[Op.or] = [
                 { dynmc_event_title: { [Op.like]: `%${search}%` } },
                 { dynmc_event_description: { [Op.like]: `%${search}%` } },
             ];
         }
 
-        const { count, rows } = await DynamicEvent.findAndCountAll({
-            where: whereCondition,
-            order: [["created_at", "DESC"]],
+        const { rows, count } = await DynamicEvent.findAndCountAll({
+            where,
             limit: parseInt(limit),
             offset: parseInt(offset),
+            order: [["created_at", "DESC"]],
         });
 
         res.status(200).json({
             message: "Dynamic Events fetched successfully",
             total: count,
-            page: parseInt(page),
+            page: Number(page),
             totalPages: Math.ceil(count / limit),
             data: rows,
         });
     } catch (error) {
         console.error("Error fetching dynamic events:", error);
-        res.status(500).json({ success: false, message: "Server Error", error: error.message });
+        res.status(500).json({
+            success: false,
+            message: "Server Error",
+            error: error.message,
+        });
     }
 };
 
