@@ -502,6 +502,8 @@ export const downloadSubmissionsExcel = async (req, res) => {
         // Style Header
         worksheet.getRow(1).font = { bold: true };
 
+        const serverUrl = process.env.SERVER_URL || "";
+
         rows.forEach(row => {
             const rowData = {
                 id: row.submission_id,
@@ -511,16 +513,35 @@ export const downloadSubmissionsExcel = async (req, res) => {
 
             const subValues = valuesMap[row.submission_id] || {};
 
+            const processVal = (val) => {
+                if (val === null || val === undefined) return "";
+                let strVal = typeof val === "string" ? val : JSON.stringify(val);
+
+                // Remove potential surrounding quotes from JSON storage
+                if (strVal.startsWith('"') && strVal.endsWith('"')) {
+                    strVal = strVal.slice(1, -1);
+                }
+
+                // Prepend server URL if it's an upload path
+                if (strVal.startsWith('/uploads')) {
+                    return `${serverUrl}${strVal}`;
+                }
+                return strVal;
+            };
+
             if (event_id && dynamicHeaders.length > 0) {
                 // Map dynamic fields
                 dynamicHeaders.forEach(h => {
-                    // key is field_101
                     const fieldId = h.key.replace("field_", "");
-                    rowData[h.key] = subValues[fieldId] || "";
+                    rowData[h.key] = processVal(subValues[fieldId]);
                 });
             } else if (!event_id) {
-                // Summary view
-                rowData["data_summary"] = JSON.stringify(subValues);
+                // Summary view - process each value in the summary
+                const processedSummary = {};
+                Object.keys(subValues).forEach(key => {
+                    processedSummary[key] = processVal(subValues[key]);
+                });
+                rowData["data_summary"] = JSON.stringify(processedSummary);
             }
 
             worksheet.addRow(rowData);

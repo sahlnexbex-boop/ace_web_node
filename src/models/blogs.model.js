@@ -1,7 +1,7 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/db.js";
 import Course from "./course.model.js";
-import Category from "./courseCategory.model.js";
+// import Category from "./courseCategory.model.js";
 
 const Blog = sequelize.define(
   "Blog",
