@@ -2,6 +2,7 @@ import Topper from "../models/topper.model.js";
 // import Course from "../models/course.model.js";
 import CourseCategory from "../models/courseCategory.model.js";
 import { Op } from "sequelize";
+import sequelize from "../config/db.js";
 import { deleteFile } from "../utils/fileHelper.js";
 
 const isUnsupportedFile = (mimetype) => {
@@ -49,7 +50,7 @@ export const createTopper = async (req, res) => {
 // list
 export const getToppers = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = "", status, category_id, year } = req.query;
+    const { page = 1, limit = 10, search = "", status, category_id, year, year_based } = req.query;
 
     const offset = (page - 1) * limit;
     const where = {};
@@ -59,6 +60,12 @@ export const getToppers = async (req, res) => {
     if (category_id) where.category_id = category_id;
     if (year) where.year = year;
 
+    const order = [];
+    if (year_based === "true") {
+      order.push(["year", "DESC"]);
+    }
+    order.push(["topper_id", "DESC"]);
+
     const { rows, count } = await Topper.findAndCountAll({
       where,
       include: [
@@ -66,7 +73,7 @@ export const getToppers = async (req, res) => {
       ],
       limit: parseInt(limit),
       offset: parseInt(offset),
-      order: [["topper_id", "DESC"]],
+      order,
     });
 
     res.json({
@@ -75,6 +82,75 @@ export const getToppers = async (req, res) => {
       page: Number(page),
       totalPages: Math.ceil(count / limit),
       data: rows,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// get category list having toppers only
+export const getTopperCategories = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, search = "" } = req.query;
+    const offset = (page - 1) * limit;
+
+    const where = { status: 1 };
+    if (search) {
+      where.category_name = { [Op.like]: `%${search}%` };
+    }
+
+    const { rows, count } = await CourseCategory.findAndCountAll({
+      where,
+      attributes: [
+        "category_id",
+        "category_name",
+        "category_image",
+        [sequelize.fn("COUNT", sequelize.col("toppers.topper_id")), "topper_count"],
+      ],
+      include: [
+        {
+          model: Topper,
+          as: "toppers",
+          attributes: [],
+          where: { status: 1 },
+          required: true, // Only categories with toppers
+        },
+      ],
+      group: [
+        "CourseCategory.category_id",
+        "CourseCategory.category_name",
+        "CourseCategory.category_image",
+      ],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      subQuery: false,
+      distinct: true,
+    });
+
+    const totalCount = count.length;
+
+    // Fetch first topper data for each category
+    const rowsWithTopper = await Promise.all(
+      rows.map(async (cat) => {
+        const firstTopper = await Topper.findOne({
+          where: { category_id: cat.category_id, status: 1 },
+          order: [["topper_id", "DESC"]],
+          attributes: ["topper_id", "topper_name", "topper_image", "topper_rank", "year", "exam_name"],
+        });
+
+        return {
+          ...cat.toJSON(),
+          first_topper: firstTopper || null,
+        };
+      })
+    );
+
+    res.json({
+      message: "Topper categories fetched successfully",
+      total: totalCount,
+      page: Number(page),
+      totalPages: Math.ceil(totalCount / limit),
+      data: rowsWithTopper,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

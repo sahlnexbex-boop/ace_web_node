@@ -62,5 +62,6 @@ const Topper = sequelize.define(
 
 // Only Category Relation
 Topper.belongsTo(CourseCategory, { foreignKey: "category_id", as: "category" });
+CourseCategory.hasMany(Topper, { foreignKey: "category_id", as: "toppers" });
 
 export default Topper;
