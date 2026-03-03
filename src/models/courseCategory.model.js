@@ -2,7 +2,7 @@ import { DataTypes, Model } from "sequelize";
 import sequelize from "../config/db.js";
 import CourseType from "./courseType.model.js";
 
-class CourseCategory extends Model {}
+class CourseCategory extends Model { }
 
 CourseCategory.init(
   {
@@ -20,10 +20,7 @@ CourseCategory.init(
       type: DataTypes.STRING(255),
       allowNull: true,
     },
-    total_courses: {
-      type: DataTypes.INTEGER,
-      defaultValue: 0,
-    },
+
     course_type_id: {
       type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,

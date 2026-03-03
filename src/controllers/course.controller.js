@@ -2,7 +2,7 @@ import { Op } from "sequelize";
 import Course from "../models/course.model.js";
 import CourseCategory from "../models/courseCategory.model.js";
 import { deleteFile } from "../utils/fileHelper.js";
-import { deslugify } from "../utils/slugify.js";
+import { slugify, deslugify } from "../utils/slugify.js";
 
 // Helpers
 const normalizeCourseType = (value) => {
@@ -175,10 +175,7 @@ export const createCourse = async (req, res) => {
       created_by: req.user?.user_id || 0,
     });
 
-    await CourseCategory.increment(
-      { total_courses: 1 },
-      { where: { category_id: course_category_id } }
-    );
+
 
     res.status(201).json({
       message: "Course created successfully",
@@ -271,16 +268,9 @@ export const getCourseBySlug = async (req, res) => {
       return res.status(400).json({ message: "Slug is required" });
     }
 
-    // Convert slug → readable name
-    const courseName = deslugify(slug);
-
-    const course = await Course.findOne({
-      where: {
-        course_name: {
-          [Op.like]: `%${courseName}%`,
-        },
-        status: 1,
-      },
+    // To correctly handle special characters, we fetch active courses and find the match by slugifying their names.
+    const allCourses = await Course.findAll({
+      where: { status: 1 },
       include: [
         {
           model: CourseCategory,
@@ -289,6 +279,8 @@ export const getCourseBySlug = async (req, res) => {
         },
       ],
     });
+
+    const course = allCourses.find((c) => slugify(c.course_name) === slug);
 
     if (!course) {
       return res.status(404).json({ message: "Course not found" });
@@ -488,11 +480,7 @@ export const deleteCourse = async (req, res) => {
 
     await course.destroy();
 
-    const category = await CourseCategory.findByPk(categoryId);
-    if (category) {
-      const newCount = Math.max((category.total_courses || 0) - 1, 0);
-      await category.update({ total_courses: newCount });
-    }
+
   } catch (err) {
     console.error("Error in deleteCourse:", err);
     res.status(500).json({ error: err.message });

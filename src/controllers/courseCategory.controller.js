@@ -46,7 +46,6 @@ export const createCategory = async (req, res) => {
       category_name,
       category_description,
       course_type_id,
-      total_courses: 0,
       category_image: image,
       status: [0, 1].includes(Number(status)) ? Number(status) : 1,
       created_by: req.user?.user_id || 0,
@@ -123,6 +122,20 @@ export const getCategories = async (req, res) => {
 
     const { rows, count } = await CourseCategory.findAndCountAll({
       where,
+      attributes: {
+        include: [
+          [
+            sequelize.literal(`(
+              SELECT COUNT(*)
+              FROM courses AS course
+              WHERE
+                course.course_category_id = CourseCategory.category_id
+                AND course.status = 1
+            )`),
+            "total_courses",
+          ],
+        ],
+      },
       include: [
         {
           model: CourseType,
@@ -152,6 +165,20 @@ export const getCategoryById = async (req, res) => {
   try {
     const { id } = req.params;
     const category = await CourseCategory.findByPk(id, {
+      attributes: {
+        include: [
+          [
+            sequelize.literal(`(
+              SELECT COUNT(*)
+              FROM courses AS course
+              WHERE
+                course.course_category_id = CourseCategory.category_id
+                AND course.status = 1
+            )`),
+            "total_courses",
+          ],
+        ],
+      },
       include: [
         {
           model: CourseType,
@@ -182,6 +209,20 @@ export const getCategoryBySlug = async (req, res) => {
     }
     const categories = await CourseCategory.findAll({
       where: { status: 1 },
+      attributes: {
+        include: [
+          [
+            sequelize.literal(`(
+              SELECT COUNT(*)
+              FROM courses AS course
+              WHERE
+                course.course_category_id = CourseCategory.category_id
+                AND course.status = 1
+            )`),
+            "total_courses",
+          ],
+        ],
+      },
       include: [
         {
           model: CourseType,
