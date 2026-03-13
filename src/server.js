@@ -105,7 +105,7 @@ startEditorCleanupJob();
 const PORT = process.env.PORT || 5000;
 
 sequelize
-  .sync({ alter: true }) // Use alter to update existing tables without dropping them
+  .sync() // Use alter to update existing tables without dropping them
   .then(async () => {
     console.log(" Database connected");
 
