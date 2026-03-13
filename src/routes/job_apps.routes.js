@@ -5,11 +5,15 @@ import {
   getJobApplicationById,
   updateJobApplication,
   deleteJobApplication,
+  downloadJobApplicationExcel,
 } from "../controllers/job_apps.controller.js";
 import { verifyAccessToken } from "../middlewares/verifyAccessToken.js";
 import { dynamicUpload } from "../middlewares/upload.js";
 
 const router = express.Router();
+
+// Excel download
+router.get("/download-excel", verifyAccessToken, downloadJobApplicationExcel);
 const { upload, handleUpload } = dynamicUpload("job_applications", "resume_file");
 
 router.post(

@@ -2,6 +2,7 @@ import JobApplication from "../models/job_apps.model.js";
 import Job from "../models/jobs.model.js";
 import { Op } from "sequelize";
 import { deleteFile } from "../utils/fileHelper.js";
+import ExcelJS from "exceljs";
 
 // const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
 
@@ -92,18 +93,26 @@ export const getJobApplications = async (req, res) => {
       search = "",
       status,
       application_status,
+      job_id,
     } = req.query;
     const offset = (page - 1) * limit;
 
     const where = {};
     if (search) {
-      where.candidate_name = { [Op.like]: `%${search}%` };
+      where[Op.or] = [
+        { candidate_name: { [Op.like]: `%${search}%` } },
+        { candidate_email: { [Op.like]: `%${search}%` } },
+        { candidate_phone: { [Op.like]: `%${search}%` } },
+      ];
     }
-    if (status && [0, 1].includes(Number(status))) {
+    if (status !== undefined && status !== "") {
       where.status = Number(status);
     }
-    if (application_status && validateStatus(application_status)) {
+    if (application_status !== undefined && application_status !== "") {
       where.application_status = Number(application_status);
+    }
+    if (job_id !== undefined && job_id !== "") {
+      where.job_id = Number(job_id);
     }
 
     // Include job data (job_id + job_title)
@@ -228,5 +237,136 @@ export const deleteJobApplication = async (req, res) => {
     res.json({ message: "Job Application deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+};
+
+// Excel Download
+export const downloadJobApplicationExcel = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      search = "",
+      status,
+      application_status,
+      job_id,
+      export: exportType,
+    } = req.query;
+
+    let rows;
+
+    const where = {};
+    if (search) {
+      where[Op.or] = [
+        { candidate_name: { [Op.like]: `%${search}%` } },
+        { candidate_email: { [Op.like]: `%${search}%` } },
+        { candidate_phone: { [Op.like]: `%${search}%` } },
+      ];
+    }
+    if (status !== undefined && status !== "") {
+      where.status = Number(status);
+    }
+    if (application_status !== undefined && application_status !== "") {
+      where.application_status = Number(application_status);
+    }
+    if (job_id !== undefined && job_id !== "") {
+      where.job_id = Number(job_id);
+    }
+
+    const queryOptions = {
+      where,
+      include: [
+        {
+          model: Job,
+          attributes: ["job_title"],
+          required: false,
+        },
+      ],
+      order: [["application_id", "DESC"]],
+    };
+
+    // FULL EXPORT
+    if (exportType === "all") {
+      rows = await JobApplication.findAll(queryOptions);
+    }
+    // PAGINATED EXPORT
+    else {
+      const offset = (Number(page) - 1) * Number(limit);
+
+      rows = await JobApplication.findAll({
+        ...queryOptions,
+        limit: Number(limit),
+        offset,
+      });
+    }
+
+    // CREATE EXCEL
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Job Applications");
+
+    worksheet.columns = [
+      { header: "SI.No", key: "si_no", width: 8 },
+      { header: "Candidate Name", key: "candidate_name", width: 25 },
+      { header: "Email", key: "candidate_email", width: 28 },
+      { header: "Phone", key: "candidate_phone", width: 18 },
+      { header: "Address", key: "candidate_address", width: 35 },
+      { header: "Applied For", key: "job_title", width: 30 },
+      { header: "Application Date", key: "application_date", width: 18 },
+      { header: "Request Status", key: "application_status", width: 18 },
+      { header: "Status", key: "status", width: 12 },
+    ];
+
+    // Header styling
+    worksheet.getRow(1).font = { bold: true };
+
+    const applicationStatusMap = {
+      1: "Requested",
+      2: "Ongoing",
+      3: "Closed",
+    };
+
+    const statusMap = {
+      0: "Inactive",
+      1: "Active",
+    };
+
+    rows.forEach((item, index) => {
+      const appData = item.toJSON();
+      const { Job: job, ...rest } = appData;
+
+      worksheet.addRow({
+        si_no: index + 1,
+        candidate_name: rest.candidate_name || "",
+        candidate_email: rest.candidate_email || "",
+        candidate_phone: rest.candidate_phone || "",
+        candidate_address: rest.candidate_address || "",
+        job_title: job?.job_title || "—",
+        application_date: rest.application_date
+          ? new Date(rest.application_date).toLocaleDateString("en-GB")
+          : "",
+        application_status: applicationStatusMap[rest.application_status] || "Requested",
+        status: statusMap[rest.status] || "Active",
+      });
+    });
+
+    // RESPONSE HEADERS
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=job_applications_${exportType === "all" ? "full" : `page_${page}`
+      }.xlsx`
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error("Job Application Excel export error:", error);
+    res.status(500).json({
+      message: "Failed to export job application data",
+    });
   }
 };
