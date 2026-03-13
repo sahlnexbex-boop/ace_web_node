@@ -40,6 +40,9 @@ import dynamicEventRoutes from "./routes/dynamicEvent.routes.js";
 import dynamicFormSubmissionRoutes from "./routes/dynamicFormSubmission.routes.js";
 import { startEditorCleanupJob } from "./utils/editorCleanup.job.js";
 import serviceCarouselRoutes from "./routes/serviceCarousel.routes.js";
+import jobRoutes from "./routes/job.routes.js";
+import jobApplicationRoutes from "./routes/job_apps.routes.js";
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -94,6 +97,9 @@ app.use("/api/tution-registration", tutionRegistrationRoutes);
 app.use("/api/dynamic-events", dynamicEventRoutes);
 app.use("/api/dynamic-submissions", dynamicFormSubmissionRoutes);
 app.use("/api/service-carousel", serviceCarouselRoutes);
+app.use("/api/jobs", jobRoutes);
+app.use("/api/job-applications", jobApplicationRoutes);
+
 
 // Student routes
 app.use("/api/student/auth", studentAuthRoutes);
