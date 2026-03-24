@@ -7,6 +7,8 @@ import {
   updateCourse,
   deleteCourse,
   getCourseBySlug,
+  createFullCourse,
+  updateFullCourse,
 } from "../controllers/course.controller.js";
 import { dynamicUpload } from "../middlewares/upload.js";
 
@@ -20,6 +22,8 @@ const courseUpload = upload.fields([
 ]);
 
 router.post("/", verifyAccessToken, courseUpload,handleUpload, createCourse);
+router.post("/full", verifyAccessToken, courseUpload, handleUpload, createFullCourse);
+router.put("/full/:id", verifyAccessToken, courseUpload, handleUpload, updateFullCourse);
 router.get("/", getCourses);
 router.get("/:id", getCourseById);
 router.get("/slug/:slug", getCourseBySlug);

@@ -60,3 +60,6 @@ config/db_credentials.js
 
 # Other artifacts
 /coverage
+
+# Uploaded Files
+/uploads/
