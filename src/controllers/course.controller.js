@@ -272,7 +272,13 @@ export const getCourseById = async (req, res) => {
       include.push(moduleInclude);
     }
 
-    const course = await Course.findByPk(id, { include });
+    const course = await Course.findByPk(id, {
+      include,
+      order: [
+        [{ model: Module, as: "modules" }, "module_id", "ASC"],
+        [{ model: Module, as: "modules" }, { model: Chapter, as: "chapters" }, "chapter_id", "ASC"],
+      ],
+    });
 
     if (!course) return res.status(404).json({ message: "Course not found" });
 
@@ -320,6 +326,10 @@ export const getCourseBySlug = async (req, res) => {
     const allCourses = await Course.findAll({
       where: { status: 1 },
       include,
+      order: [
+        [{ model: Module, as: "modules" }, "module_id", "ASC"],
+        [{ model: Module, as: "modules" }, { model: Chapter, as: "chapters" }, "chapter_id", "ASC"],
+      ],
     });
 
     const course = allCourses.find((c) => slugify(c.course_name) === slug);
@@ -703,6 +713,10 @@ export const createFullCourse = async (req, res) => {
           include: [{ model: Chapter, as: "chapters" }],
         },
       ],
+      order: [
+        [{ model: Module, as: "modules" }, "module_id", "ASC"],
+        [{ model: Module, as: "modules" }, { model: Chapter, as: "chapters" }, "chapter_id", "ASC"],
+      ],
     });
 
     res.status(201).json({
@@ -925,6 +939,10 @@ export const updateFullCourse = async (req, res) => {
           as: "modules",
           include: [{ model: Chapter, as: "chapters" }],
         },
+      ],
+      order: [
+        [{ model: Module, as: "modules" }, "module_id", "ASC"],
+        [{ model: Module, as: "modules" }, { model: Chapter, as: "chapters" }, "chapter_id", "ASC"],
       ],
     });
 
