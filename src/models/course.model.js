@@ -2,6 +2,7 @@ import { DataTypes } from "sequelize";
 import sequelize from "../config/db.js";
 import CourseCategory from "./courseCategory.model.js";
 
+
 const Course = sequelize.define(
   "Course",
   {

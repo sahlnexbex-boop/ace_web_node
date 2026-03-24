@@ -42,6 +42,7 @@ import { startEditorCleanupJob } from "./utils/editorCleanup.job.js";
 import serviceCarouselRoutes from "./routes/serviceCarousel.routes.js";
 import jobRoutes from "./routes/job.routes.js";
 import jobApplicationRoutes from "./routes/job_apps.routes.js";
+import reviewRoutes from "./routes/review.routes.js";
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -99,6 +100,7 @@ app.use("/api/dynamic-submissions", dynamicFormSubmissionRoutes);
 app.use("/api/service-carousel", serviceCarouselRoutes);
 app.use("/api/jobs", jobRoutes);
 app.use("/api/job-applications", jobApplicationRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 
 // Student routes
@@ -111,12 +113,12 @@ startEditorCleanupJob();
 const PORT = process.env.PORT || 5000;
 
 sequelize
-  .sync() // Use alter to update existing tables without dropping them
+  .sync({ alter: true }) // Use alter to update existing tables without dropping them
   .then(async () => {
     console.log(" Database connected");
 
     await runSeeder();
 
-    app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   })
-  .catch((err) => console.error("❌ Database connection error:", err));
+  .catch((err) => console.error("Database connection error:", err));
