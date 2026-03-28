@@ -62,7 +62,7 @@ export const createCourse = async (req, res) => {
       course_description,
       course_rating,
       course_category_id,
-      course_duration,
+      course_chapters,
       course_fee,
       course_overview,
       course_syllabus,
@@ -173,7 +173,7 @@ export const createCourse = async (req, res) => {
       course_description,
       course_rating: normalizedRating,
       course_category_id,
-      course_duration,
+      course_chapters,
       course_fee,
       course_overview,
       course_syllabus,
@@ -259,14 +259,19 @@ export const getCourseById = async (req, res) => {
       },
     ];
 
+    const order = [];
+
     if (modules === "true") {
       const moduleInclude = {
         model: Module,
         as: "modules",
       };
 
+      order.push([{ model: Module, as: "modules" }, "module_id", "ASC"]);
+
       if (chapters === "true") {
         moduleInclude.include = [{ model: Chapter, as: "chapters" }];
+        order.push([{ model: Module, as: "modules" }, { model: Chapter, as: "chapters" }, "chapter_id", "ASC"]);
       }
 
       include.push(moduleInclude);
@@ -274,10 +279,7 @@ export const getCourseById = async (req, res) => {
 
     const course = await Course.findByPk(id, {
       include,
-      order: [
-        [{ model: Module, as: "modules" }, "module_id", "ASC"],
-        [{ model: Module, as: "modules" }, { model: Chapter, as: "chapters" }, "chapter_id", "ASC"],
-      ],
+      order,
     });
 
     if (!course) return res.status(404).json({ message: "Course not found" });
@@ -309,14 +311,19 @@ export const getCourseBySlug = async (req, res) => {
       },
     ];
 
+    const order = [];
+
     if (modules === "true") {
       const moduleInclude = {
         model: Module,
         as: "modules",
       };
 
+      order.push([{ model: Module, as: "modules" }, "module_id", "ASC"]);
+
       if (chapters === "true") {
         moduleInclude.include = [{ model: Chapter, as: "chapters" }];
+        order.push([{ model: Module, as: "modules" }, { model: Chapter, as: "chapters" }, "chapter_id", "ASC"]);
       }
 
       include.push(moduleInclude);
@@ -326,10 +333,7 @@ export const getCourseBySlug = async (req, res) => {
     const allCourses = await Course.findAll({
       where: { status: 1 },
       include,
-      order: [
-        [{ model: Module, as: "modules" }, "module_id", "ASC"],
-        [{ model: Module, as: "modules" }, { model: Chapter, as: "chapters" }, "chapter_id", "ASC"],
-      ],
+      order,
     });
 
     const course = allCourses.find((c) => slugify(c.course_name) === slug);
@@ -357,7 +361,7 @@ export const updateCourse = async (req, res) => {
       course_description,
       course_rating,
       course_category_id,
-      course_duration,
+      course_chapters,
       course_fee,
       course_overview,
       course_syllabus,
@@ -489,7 +493,7 @@ export const updateCourse = async (req, res) => {
       course.course_type = courseType;
     }
     course.course_category_id = course_category_id || course.course_category_id;
-    course.course_duration = course_duration || course.course_duration;
+    course.course_chapters = course_chapters || course.course_chapters;
     course.course_fee = course_fee || course.course_fee;
     course.course_overview = course_overview || course.course_overview;
     course.course_syllabus = course_syllabus || course.course_syllabus;
@@ -580,7 +584,7 @@ export const createFullCourse = async (req, res) => {
       course_description,
       course_rating,
       course_category_id,
-      course_duration,
+      course_chapters,
       course_fee,
       course_overview,
       course_syllabus,
@@ -657,7 +661,7 @@ export const createFullCourse = async (req, res) => {
       course_description,
       course_rating: normalizedRating,
       course_category_id,
-      course_duration,
+      course_chapters,
       course_fee,
       course_overview,
       course_syllabus,
@@ -740,7 +744,7 @@ export const updateFullCourse = async (req, res) => {
       course_description,
       course_rating,
       course_category_id,
-      course_duration,
+      course_chapters,
       course_fee,
       course_overview,
       course_syllabus,
@@ -812,7 +816,7 @@ export const updateFullCourse = async (req, res) => {
     }
 
     course.course_category_id = course_category_id || course.course_category_id;
-    course.course_duration = course_duration || course.course_duration;
+    course.course_chapters = course_chapters || course.course_chapters;
     course.course_fee = course_fee || course.course_fee;
     course.course_overview = course_overview || course.course_overview;
     course.course_syllabus = course_syllabus || course.course_syllabus;
