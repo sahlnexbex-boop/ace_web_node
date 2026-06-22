@@ -1,6 +1,6 @@
 import JobApplication from "../models/job_apps.model.js";
 import Job from "../models/jobs.model.js";
-import { Op } from "sequelize";
+import { Op, Sequelize } from "sequelize";
 import { deleteFile } from "../utils/fileHelper.js";
 import ExcelJS from "exceljs";
 
@@ -11,6 +11,27 @@ const isUnsupportedFile = (file) =>
 
 // Validate application_status
 const validateStatus = (status) => [1, 2, 3].includes(Number(status));
+
+function formatJobAppBranches(jobApp, branchMap) {
+  const appData = jobApp.toJSON();
+  let branchesList = [];
+  if (appData.applied_branches) {
+    try {
+      branchesList = typeof appData.applied_branches === "string" ? JSON.parse(appData.applied_branches) : appData.applied_branches;
+    } catch (e) {
+      branchesList = [];
+    }
+  }
+  if (Array.isArray(branchesList)) {
+    appData.applied_branches = branchesList.map(id => ({
+      branch_id: Number(id),
+      branch_name: branchMap[id] || "Unknown",
+    }));
+  } else {
+    appData.applied_branches = [];
+  }
+  return appData;
+}
 
 // CREATE
 export const createJobApplication = async (req, res) => {
@@ -25,6 +46,7 @@ export const createJobApplication = async (req, res) => {
       application_status,
       application_date,
       status,
+      applied_branches,
     } = req.body;
 
     /* ---------------- FILE VALIDATION ---------------- */
@@ -57,6 +79,15 @@ export const createJobApplication = async (req, res) => {
     if (!job)
       return res.status(400).json({ message: "Invalid job_id" });
 
+    let parsedAppliedBranches = null;
+    if (applied_branches) {
+      try {
+        parsedAppliedBranches = typeof applied_branches === "string" ? JSON.parse(applied_branches) : applied_branches;
+      } catch (e) {
+        parsedAppliedBranches = applied_branches;
+      }
+    }
+
     /* ---------------- CREATE RECORD ---------------- */
     const resume_file = `/uploads/job_applications/${req.file.filename}`;
 
@@ -66,6 +97,7 @@ export const createJobApplication = async (req, res) => {
       candidate_phone,
       candidate_address,
       job_id,
+      applied_branches: parsedAppliedBranches,
       resume_file,
       cover_letter,
       application_status,
@@ -94,6 +126,7 @@ export const getJobApplications = async (req, res) => {
       status,
       application_status,
       job_id,
+      branch,
     } = req.query;
     const offset = (page - 1) * limit;
 
@@ -114,27 +147,42 @@ export const getJobApplications = async (req, res) => {
     if (job_id !== undefined && job_id !== "") {
       where.job_id = Number(job_id);
     }
+    if (branch !== undefined && branch !== "") {
+      where[Op.and] = Sequelize.literal(`JSON_CONTAINS(applied_branches, '${Number(branch)}')`);
+    }
 
-    // Include job data (job_id + job_title)
+    const jobInclude = {
+      model: Job,
+      attributes: ["job_id", "job_title"],
+      required: false,
+    };
+
     const { rows, count } = await JobApplication.findAndCountAll({
       where,
-      include: [
-        {
-          model: Job,
-          attributes: ["job_id", "job_title"],
-        },
-      ],
+      include: [jobInclude],
       limit: parseInt(limit),
       offset: parseInt(offset),
       order: [["application_id", "DESC"]],
     });
+
+    // Fetch branches for formatting mapping
+    const branches = await JobApplication.sequelize.query(
+      "SELECT branch_id, branch_name FROM mst_branches;",
+      { type: Sequelize.QueryTypes.SELECT }
+    );
+    const branchMap = {};
+    branches.forEach((b) => {
+      branchMap[b.branch_id] = b.branch_name;
+    });
+
+    const formattedRows = rows.map(row => formatJobAppBranches(row, branchMap));
 
     res.json({
       message: "Job Applications fetched successfully",
       total: count,
       page: Number(page),
       totalPages: Math.ceil(count / limit),
-      data: rows,
+      data: formattedRows,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -156,7 +204,19 @@ export const getJobApplicationById = async (req, res) => {
     if (!app)
       return res.status(404).json({ message: "Job Application not found" });
 
-    res.json({ message: "Fetched successfully", data: app });
+    // Fetch branches for formatting mapping
+    const branches = await JobApplication.sequelize.query(
+      "SELECT branch_id, branch_name FROM mst_branches;",
+      { type: Sequelize.QueryTypes.SELECT }
+    );
+    const branchMap = {};
+    branches.forEach((b) => {
+      branchMap[b.branch_id] = b.branch_name;
+    });
+
+    const formattedApp = formatJobAppBranches(app, branchMap);
+
+    res.json({ message: "Fetched successfully", data: formattedApp });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -180,6 +240,7 @@ export const updateJobApplication = async (req, res) => {
       application_status,
       application_date,
       status,
+      applied_branches,
     } = req.body;
 
     if (application_status && !validateStatus(application_status))
@@ -201,6 +262,16 @@ export const updateJobApplication = async (req, res) => {
 
       if (app.resume_file) deleteFile(app.resume_file);
       app.resume_file = `/uploads/job_applications/${req.file.filename}`;
+    }
+
+    if (applied_branches !== undefined) {
+      let parsedAppliedBranches = null;
+      try {
+        parsedAppliedBranches = typeof applied_branches === "string" ? JSON.parse(applied_branches) : applied_branches;
+      } catch (e) {
+        parsedAppliedBranches = applied_branches;
+      }
+      app.applied_branches = parsedAppliedBranches;
     }
 
     app.candidate_name = candidate_name || app.candidate_name;
@@ -250,6 +321,7 @@ export const downloadJobApplicationExcel = async (req, res) => {
       status,
       application_status,
       job_id,
+      branch,
       export: exportType,
     } = req.query;
 
@@ -273,15 +345,19 @@ export const downloadJobApplicationExcel = async (req, res) => {
       where.job_id = Number(job_id);
     }
 
+    const jobInclude = {
+      model: Job,
+      attributes: ["job_title"],
+      required: false,
+    };
+
+    if (branch !== undefined && branch !== "") {
+      where[Op.and] = Sequelize.literal(`JSON_CONTAINS(applied_branches, '${Number(branch)}')`);
+    }
+
     const queryOptions = {
       where,
-      include: [
-        {
-          model: Job,
-          attributes: ["job_title"],
-          required: false,
-        },
-      ],
+      include: [jobInclude],
       order: [["application_id", "DESC"]],
     };
 
@@ -298,7 +374,15 @@ export const downloadJobApplicationExcel = async (req, res) => {
         limit: Number(limit),
         offset,
       });
-    }
+    }    // Fetch branch names for mapping
+    const branches = await JobApplication.sequelize.query(
+      "SELECT branch_id, branch_name FROM mst_branches;",
+      { type: Sequelize.QueryTypes.SELECT }
+    );
+    const branchMap = {};
+    branches.forEach((b) => {
+      branchMap[b.branch_id] = b.branch_name;
+    });
 
     // CREATE EXCEL
     const workbook = new ExcelJS.Workbook();
@@ -307,10 +391,10 @@ export const downloadJobApplicationExcel = async (req, res) => {
     worksheet.columns = [
       { header: "SI.No", key: "si_no", width: 8 },
       { header: "Candidate Name", key: "candidate_name", width: 25 },
-      { header: "Email", key: "candidate_email", width: 28 },
       { header: "Phone", key: "candidate_phone", width: 18 },
       { header: "Address", key: "candidate_address", width: 35 },
       { header: "Applied For", key: "job_title", width: 30 },
+      { header: "Branch", key: "job_branch", width: 25 },
       { header: "Application Date", key: "application_date", width: 18 },
       { header: "Request Status", key: "application_status", width: 18 },
       { header: "Status", key: "status", width: 12 },
@@ -334,13 +418,30 @@ export const downloadJobApplicationExcel = async (req, res) => {
       const appData = item.toJSON();
       const { Job: job, ...rest } = appData;
 
+      let branchNames = "—";
+      let branchesList = [];
+      if (rest.applied_branches) {
+        try {
+          branchesList = typeof rest.applied_branches === "string" 
+            ? JSON.parse(rest.applied_branches) 
+            : rest.applied_branches;
+        } catch (e) {
+          branchesList = [];
+        }
+      }
+      if (Array.isArray(branchesList) && branchesList.length > 0) {
+        branchNames = branchesList
+          .map((id) => branchMap[id] || id)
+          .join(", ");
+      }
+
       worksheet.addRow({
         si_no: index + 1,
         candidate_name: rest.candidate_name || "",
-        candidate_email: rest.candidate_email || "",
         candidate_phone: rest.candidate_phone || "",
         candidate_address: rest.candidate_address || "",
         job_title: job?.job_title || "—",
+        job_branch: branchNames,
         application_date: rest.application_date
           ? new Date(rest.application_date).toLocaleDateString("en-GB")
           : "",
@@ -348,7 +449,6 @@ export const downloadJobApplicationExcel = async (req, res) => {
         status: statusMap[rest.status] || "Active",
       });
     });
-
     // RESPONSE HEADERS
     res.setHeader(
       "Content-Type",

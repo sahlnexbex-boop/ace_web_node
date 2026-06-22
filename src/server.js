@@ -5,6 +5,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 import sequelize from "./config/db.js";
+import { runMigrations } from "./migrations/migrator.js";
 import { runSeeder } from "./seeders/seeder.js";
 import userRoutes from "./routes/user.routes.js";
 import authRoutes from "./routes/auth.routes.js";
@@ -43,6 +44,7 @@ import serviceCarouselRoutes from "./routes/serviceCarousel.routes.js";
 import jobRoutes from "./routes/job.routes.js";
 import jobApplicationRoutes from "./routes/job_apps.routes.js";
 import reviewRoutes from "./routes/review.routes.js";
+import branchRoute from "./routes/branch.routes.js";
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -101,6 +103,7 @@ app.use("/api/service-carousel", serviceCarouselRoutes);
 app.use("/api/jobs", jobRoutes);
 app.use("/api/job-applications", jobApplicationRoutes);
 app.use("/api/reviews", reviewRoutes);
+app.use("/api/branches", branchRoute);
 
 
 // Student routes
@@ -113,9 +116,16 @@ startEditorCleanupJob();
 const PORT = process.env.PORT || 5000;
 
 sequelize
-  .sync({ alter: true })
+  .sync()
   .then(async () => {
     console.log(" Database connected");
+
+    try {
+      await runMigrations();
+    } catch (migrationError) {
+      console.error(" Failed to run database migrations:", migrationError);
+      process.exit(1);
+    }
 
     await runSeeder();
 

@@ -46,6 +46,10 @@ const JobApplication = sequelize.define(
       type: DataTypes.DATE,
       allowNull: false,
     },
+    applied_branches: {
+      type: DataTypes.JSON,
+      allowNull: true,
+    },
     status: {
       type: DataTypes.TINYINT,
       defaultValue: 1,

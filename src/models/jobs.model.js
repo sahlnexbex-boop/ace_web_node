@@ -20,9 +20,9 @@ const Job = sequelize.define(
       allowNull: false,
     },
 
-    job_location: {
-      type: DataTypes.STRING(255),
-      allowNull: false,
+    job_branches: {
+      type: DataTypes.JSON,
+      allowNull: true,
     },
 
     job_type: {

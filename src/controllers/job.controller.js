@@ -1,8 +1,29 @@
 import Job from "../models/jobs.model.js";
-import { Op } from "sequelize";
+import { Op, Sequelize } from "sequelize";
 import { deleteFile } from "../utils/fileHelper.js";
 
 const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
+
+function formatJobBranches(job, branchMap) {
+  const jobData = job.toJSON();
+  let branchesList = [];
+  if (jobData.job_branches) {
+    try {
+      branchesList = typeof jobData.job_branches === "string" ? JSON.parse(jobData.job_branches) : jobData.job_branches;
+    } catch (e) {
+      branchesList = [];
+    }
+  }
+  if (Array.isArray(branchesList)) {
+    jobData.job_branches = branchesList.map(id => ({
+      branch_id: Number(id),
+      branch_name: branchMap[id] || "Unknown",
+    }));
+  } else {
+    jobData.job_branches = [];
+  }
+  return jobData;
+}
 
 //  CREATE JOB 
 export const createJob = async (req, res) => {
@@ -10,7 +31,7 @@ export const createJob = async (req, res) => {
     const {
       job_title,
       job_description,
-      job_location,
+      job_branches,
       job_type,
       opening_seats,
       experiance_level,
@@ -22,12 +43,21 @@ export const createJob = async (req, res) => {
     if (
       !job_title ||
       !job_description ||
-      !job_location ||
+      !job_branches ||
       !job_type ||
       !experiance_level ||
       !apply_deadline
     ) {
       return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    let parsedBranches = null;
+    if (job_branches) {
+      try {
+        parsedBranches = typeof job_branches === "string" ? JSON.parse(job_branches) : job_branches;
+      } catch (e) {
+        parsedBranches = job_branches;
+      }
     }
 
     const job_image = req.file
@@ -43,7 +73,7 @@ export const createJob = async (req, res) => {
     const job = await Job.create({
       job_title,
       job_description,
-      job_location,
+      job_branches: parsedBranches,
       job_type,
       opening_seats: opening_seats || null,
       experiance_level,
@@ -65,7 +95,7 @@ export const createJob = async (req, res) => {
 //  LIST JOBS 
 export const getJobs = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = "", status, type, location } =
+    const { page = 1, limit = 10, search = "", status, type, branch } =
       req.query;
 
     const offset = (page - 1) * limit;
@@ -76,8 +106,8 @@ export const getJobs = async (req, res) => {
       where.job_title = { [Op.like]: `%${search}%` };
     }
 
-    if (location) {
-      where.job_location = { [Op.like]: `%${location}%` };
+    if (branch) {
+      where[Op.and] = Sequelize.literal(`JSON_CONTAINS(job_branches, '${Number(branch)}')`);
     }
 
     if (type) {
@@ -95,12 +125,24 @@ export const getJobs = async (req, res) => {
       order: [["job_id", "DESC"]],
     });
 
+    // Fetch branches for formatting mapping
+    const branches = await Job.sequelize.query(
+      "SELECT branch_id, branch_name FROM mst_branches;",
+      { type: Sequelize.QueryTypes.SELECT }
+    );
+    const branchMap = {};
+    branches.forEach((b) => {
+      branchMap[b.branch_id] = b.branch_name;
+    });
+
+    const formattedRows = rows.map(row => formatJobBranches(row, branchMap));
+
     res.json({
       message: "Jobs fetched successfully",
       total: count,
       page: Number(page),
       totalPages: Math.ceil(count / limit),
-      data: rows,
+      data: formattedRows,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -116,7 +158,19 @@ export const getJobById = async (req, res) => {
       return res.status(404).json({ message: "Job not found" });
     }
 
-    res.json({ message: "Job fetched successfully", data: job });
+    // Fetch branches for formatting mapping
+    const branches = await Job.sequelize.query(
+      "SELECT branch_id, branch_name FROM mst_branches;",
+      { type: Sequelize.QueryTypes.SELECT }
+    );
+    const branchMap = {};
+    branches.forEach((b) => {
+      branchMap[b.branch_id] = b.branch_name;
+    });
+
+    const formattedJob = formatJobBranches(job, branchMap);
+
+    res.json({ message: "Job fetched successfully", data: formattedJob });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -141,7 +195,17 @@ export const updateJob = async (req, res) => {
 
     job.job_title = data.job_title || job.job_title;
     job.job_description = data.job_description || job.job_description;
-    job.job_location = data.job_location || job.job_location;
+    
+    if (data.job_branches !== undefined) {
+      let parsedBranches = null;
+      try {
+        parsedBranches = typeof data.job_branches === "string" ? JSON.parse(data.job_branches) : data.job_branches;
+      } catch (e) {
+        parsedBranches = data.job_branches;
+      }
+      job.job_branches = parsedBranches;
+    }
+    
     job.job_type = data.job_type || job.job_type;
 
     job.opening_seats =

@@ -5,7 +5,11 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev": "nodemon src/server.js"
+    "dev": "nodemon src/server.js",
+    "db:migrate": "node src/migrations/migrator.js up",
+    "db:rollback": "node src/migrations/migrator.js down",
+    "db:migrate:create": "node src/migrations/migrator.js create",
+    "db:migrate:status": "node src/migrations/migrator.js status"
   },
   "keywords": [],
   "author": "",
