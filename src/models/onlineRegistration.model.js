@@ -2,6 +2,7 @@ import { DataTypes } from "sequelize";
 import sequelize from "../config/db.js";
 import CourseCategory from "./courseCategory.model.js";
 import Course from "./course.model.js";
+import Branches from "./branches.model.js";
 
 const OnlineRegistration = sequelize.define(
   "OnlineRegistration",
@@ -12,7 +13,7 @@ const OnlineRegistration = sequelize.define(
       primaryKey: true,
     },
 
-    branch: DataTypes.STRING(100),
+    branch_id: DataTypes.INTEGER.UNSIGNED,
     department_id: DataTypes.INTEGER.UNSIGNED,
     course_id: DataTypes.INTEGER.UNSIGNED,
 
@@ -80,6 +81,12 @@ OnlineRegistration.belongsTo(CourseCategory, {
 OnlineRegistration.belongsTo(Course, {
   foreignKey: "course_id",
   as: "course",
+  constraints: false,
+});
+
+OnlineRegistration.belongsTo(Branches, {
+  foreignKey: "branch_id",
+  as: "branch",
   constraints: false,
 });
 

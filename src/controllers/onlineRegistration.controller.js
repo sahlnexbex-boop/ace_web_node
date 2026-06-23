@@ -1,6 +1,7 @@
 import OnlineRegistration from "../models/onlineRegistration.model.js";
 import CourseCategory from "../models/courseCategory.model.js";
 import Course from "../models/course.model.js";
+import Branches from "../models/branches.model.js";
 import { Op } from "sequelize";
 import { deleteFile } from "../utils/fileHelper.js";
 import ExcelJS from "exceljs";
@@ -28,6 +29,11 @@ export const createRegistration = async (req, res) => {
 
     const course = await Course.findByPk(data.course_id);
     if (!course) return res.status(400).json({ message: "Invalid course_id" });
+
+    if (data.branch_id) {
+      const branchExists = await Branches.findByPk(data.branch_id);
+      if (!branchExists) return res.status(400).json({ message: "Invalid branch_id" });
+    }
 
     const student_photo = req.file
       ? `/uploads/registrations/${req.file.filename}`
@@ -58,6 +64,7 @@ export const getRegistrations = async (req, res) => {
       department_id,
       course_id,
       apply_status,
+      branch_id,
     } = req.query;
 
     const offset = (Number(page) - 1) * Number(limit);
@@ -86,6 +93,11 @@ export const getRegistrations = async (req, res) => {
       where.apply_status = apply_status;
     }
 
+    // 🏢 Filter by branch
+    if (branch_id) {
+      where.branch_id = Number(branch_id);
+    }
+
     /* ---------------- QUERY ---------------- */
 
     const { rows, count } = await OnlineRegistration.findAndCountAll({
@@ -100,6 +112,11 @@ export const getRegistrations = async (req, res) => {
           model: Course,
           as: "course",
           attributes: ["course_id", "course_name"],
+        },
+        {
+          model: Branches,
+          as: "branch",
+          attributes: ["branch_id", "branch_name"],
         },
       ],
       limit: Number(limit),
@@ -135,6 +152,11 @@ export const getRegistrationById = async (req, res) => {
         as: "course",
         attributes: ["course_id", "course_name"],
       },
+      {
+        model: Branches,
+        as: "branch",
+        attributes: ["branch_id", "branch_name"],
+      },
     ],
   });
 
@@ -146,6 +168,11 @@ export const getRegistrationById = async (req, res) => {
 export const updateRegistration = async (req, res) => {
   const reg = await OnlineRegistration.findByPk(req.params.id);
   if (!reg) return res.status(404).json({ message: "Not found" });
+
+  if (req.body.branch_id) {
+    const branchExists = await Branches.findByPk(req.body.branch_id);
+    if (!branchExists) return res.status(400).json({ message: "Invalid branch_id" });
+  }
 
   if (req.file && reg.student_photo) deleteFile(reg.student_photo);
 
@@ -194,6 +221,11 @@ export const downloadOnlineRegistrationExcel = async (req, res) => {
           model: Course,
           as: "course",
           attributes: ["course_name"],
+        },
+        {
+          model: Branches,
+          as: "branch",
+          attributes: ["branch_name"],
         },
       ],
       order: [["registration_id", "DESC"]],
@@ -245,7 +277,7 @@ export const downloadOnlineRegistrationExcel = async (req, res) => {
       worksheet.addRow({
         si_no: index + 1,
         student_name: item.student_name || "",
-        branch: item.branch || "",
+        branch: item.branch?.branch_name || "",
         department: item.department?.category_name || "",
         course: item.course?.course_name || "",
         dob: item.date_of_birth
