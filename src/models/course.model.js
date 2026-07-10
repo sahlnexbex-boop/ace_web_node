@@ -30,6 +30,10 @@ const Course = sequelize.define(
     course_questions_file: { type: DataTypes.STRING(500) },
     course_image: { type: DataTypes.STRING(500) },
     status: { type: DataTypes.TINYINT, defaultValue: 1 },
+    V2_course: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
     created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
     updated_at: { type: DataTypes.DATE },
     created_by: { type: DataTypes.INTEGER },

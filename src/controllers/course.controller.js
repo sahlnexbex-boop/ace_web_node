@@ -3,6 +3,7 @@ import Course from "../models/course.model.js";
 import Module from "../models/module.model.js";
 import Chapter from "../models/chapter.model.js";
 import CourseCategory from "../models/courseCategory.model.js";
+import CourseType from "../models/courseType.model.js";
 import sequelize from "../config/db.js";
 import { deleteFile } from "../utils/fileHelper.js";
 import { slugify, deslugify } from "../utils/slugify.js";
@@ -70,6 +71,7 @@ export const createCourse = async (req, res) => {
       cour_type,
       course_type,
       status,
+      V2_course,
     } = req.body;
 
     if (!course_name || !course_category_id) {
@@ -183,6 +185,7 @@ export const createCourse = async (req, res) => {
       course_questions_file,
       course_type: courseType, // stored as JSON array in DB
       status: [0, 1].includes(Number(status)) ? Number(status) : 1,
+      V2_course: V2_course && V2_course !== "none" ? Number(V2_course) : null,
       created_by: req.user?.user_id || 0,
     });
 
@@ -224,7 +227,14 @@ export const getCourses = async (req, res) => {
         {
           model: CourseCategory,
           as: "category",
-          attributes: ["category_id", "category_name"],
+          attributes: ["category_id", "category_name", "V2_category"],
+          include: [
+            {
+              model: CourseType,
+              as: "courseType",
+              attributes: ["type_id", "type_name", "V2_category"],
+            },
+          ],
         },
       ],
       limit: parseInt(limit),
@@ -255,7 +265,14 @@ export const getCourseById = async (req, res) => {
       {
         model: CourseCategory,
         as: "category",
-        attributes: ["category_id", "category_name"],
+        attributes: ["category_id", "category_name", "V2_category"],
+        include: [
+          {
+            model: CourseType,
+            as: "courseType",
+            attributes: ["type_id", "type_name", "V2_category"],
+          },
+        ],
       },
     ];
 
@@ -307,7 +324,14 @@ export const getCourseBySlug = async (req, res) => {
       {
         model: CourseCategory,
         as: "category",
-        attributes: ["category_id", "category_name"],
+        attributes: ["category_id", "category_name", "V2_category"],
+        include: [
+          {
+            model: CourseType,
+            as: "courseType",
+            attributes: ["type_id", "type_name", "V2_category"],
+          },
+        ],
       },
     ];
 
@@ -369,6 +393,7 @@ export const updateCourse = async (req, res) => {
       cour_type,   // optional; legacy name
       course_type, // optional; what frontend is actually sending
       status,
+      V2_course,
     } = req.body;
 
     const course = await Course.findByPk(id);
@@ -509,6 +534,10 @@ export const updateCourse = async (req, res) => {
     if (newSyllabusFile) course.course_syllabus_file = newSyllabusFile;
     if (newQuestionsFile) course.course_questions_file = newQuestionsFile;
 
+    if (V2_course !== undefined) {
+      course.V2_course = V2_course && V2_course !== "none" ? Number(V2_course) : null;
+    }
+
     await course.save();
 
     res.json({
@@ -592,7 +621,8 @@ export const createFullCourse = async (req, res) => {
       cour_type,
       course_type,
       status,
-      modules
+      modules,
+      V2_course,
     } = req.body;
 
     // Handle stringified modules
@@ -671,6 +701,7 @@ export const createFullCourse = async (req, res) => {
       course_questions_file,
       course_type: courseTypeNormal,
       status: [0, 1].includes(Number(status)) ? Number(status) : 1,
+      V2_course: V2_course && V2_course !== "none" ? Number(V2_course) : null,
       created_by: req.user?.user_id || 0,
     }, { transaction });
 
@@ -709,7 +740,14 @@ export const createFullCourse = async (req, res) => {
         {
           model: CourseCategory,
           as: "category",
-          attributes: ["category_id", "category_name"],
+          attributes: ["category_id", "category_name", "V2_category"],
+          include: [
+            {
+              model: CourseType,
+              as: "courseType",
+              attributes: ["type_id", "type_name", "V2_category"],
+            },
+          ],
         },
         {
           model: Module,
@@ -752,7 +790,8 @@ export const updateFullCourse = async (req, res) => {
       cour_type,
       course_type,
       status,
-      modules // Expected to be a JSON string or array
+      modules, // Expected to be a JSON string or array
+      V2_course,
     } = req.body;
 
     // Handle stringified modules (common in multipart-form-data)
@@ -845,6 +884,10 @@ export const updateFullCourse = async (req, res) => {
     course.updated_by = req.user?.user_id || 0;
     course.updated_at = new Date();
 
+    if (V2_course !== undefined) {
+      course.V2_course = V2_course && V2_course !== "none" ? Number(V2_course) : null;
+    }
+
     await course.save({ transaction });
 
     // --- Sync Modules and Chapters ---
@@ -936,7 +979,14 @@ export const updateFullCourse = async (req, res) => {
         {
           model: CourseCategory,
           as: "category",
-          attributes: ["category_id", "category_name"],
+          attributes: ["category_id", "category_name", "V2_category"],
+          include: [
+            {
+              model: CourseType,
+              as: "courseType",
+              attributes: ["type_id", "type_name", "V2_category"],
+            },
+          ],
         },
         {
           model: Module,

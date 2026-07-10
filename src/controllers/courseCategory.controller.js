@@ -15,7 +15,7 @@ const isUnsupportedFile = (mimetype) => {
 // create
 export const createCategory = async (req, res) => {
   try {
-    const { category_name, category_description, course_type_id, status } =
+    const { category_name, category_description, course_type_id, status, V2_category } =
       req.body;
 
     if (!category_name || !course_type_id) {
@@ -42,11 +42,14 @@ export const createCategory = async (req, res) => {
         .json({ message: "Invalid file type. Only images are allowed." });
     }
 
+    const v2_cat = V2_category && V2_category !== "" && V2_category !== "none" ? Number(V2_category) : null;
+
     const category = await CourseCategory.create({
       category_name,
       category_description,
       course_type_id,
       category_image: image,
+      V2_category: v2_cat,
       status: [0, 1].includes(Number(status)) ? Number(status) : 1,
       created_by: req.user?.user_id || 0,
     });
@@ -140,7 +143,7 @@ export const getCategories = async (req, res) => {
         {
           model: CourseType,
           as: "courseType",
-          attributes: ["type_id", "type_name"],
+          attributes: ["type_id", "type_name", "V2_category"],
         },
       ],
       limit: parseInt(limit),
@@ -183,7 +186,7 @@ export const getCategoryById = async (req, res) => {
         {
           model: CourseType,
           as: "courseType",
-          attributes: ["type_id", "type_name"],
+          attributes: ["type_id", "type_name", "V2_category"],
         },
       ],
     });
@@ -227,7 +230,7 @@ export const getCategoryBySlug = async (req, res) => {
         {
           model: CourseType,
           as: "courseType",
-          attributes: ["type_id", "type_name"],
+          attributes: ["type_id", "type_name", "V2_category"],
         },
       ],
     });
@@ -248,7 +251,7 @@ export const getCategoryBySlug = async (req, res) => {
 export const updateCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    const { category_name, category_description, course_type_id, status } =
+    const { category_name, category_description, course_type_id, status, V2_category } =
       req.body;
 
     const newImage = req.file
@@ -298,6 +301,10 @@ export const updateCategory = async (req, res) => {
       : category.status;
 
     category.category_image = newImage || category.category_image;
+
+    if (V2_category !== undefined) {
+      category.V2_category = V2_category && V2_category !== "" && V2_category !== "none" ? Number(V2_category) : null;
+    }
 
     category.updated_by = req.user?.user_id || 0;
     category.updated_at = new Date();

@@ -4,7 +4,7 @@ import CourseType from "../models/courseType.model.js";
 // create
 export const createCourseType = async (req, res) => {
   try {
-    const { type_name, status = 1 } = req.body;
+    const { type_name, status = 1, V2_category } = req.body;
 
     if (!type_name) {
       return res.status(400).json({ message: "Type name is required" });
@@ -18,6 +18,7 @@ export const createCourseType = async (req, res) => {
     const courseType = await CourseType.create({
       type_name,
       status: [0, 1].includes(Number(status)) ? status : 1,
+      V2_category: V2_category !== undefined ? V2_category : null,
       created_by: req.user?.user_id || 0,
     });
 
@@ -87,7 +88,7 @@ export const getCourseTypeById = async (req, res) => {
 export const updateCourseType = async (req, res) => {
   try {
     const { id } = req.params;
-    const { type_name, status } = req.body;
+    const { type_name, status, V2_category } = req.body;
 
     const courseType = await CourseType.findByPk(id);
     if (!courseType) {
@@ -111,6 +112,7 @@ export const updateCourseType = async (req, res) => {
       courseType.status = [0, 1].includes(Number(status))
         ? status
         : courseType.status;
+    if (V2_category !== undefined) courseType.V2_category = V2_category;
 
     courseType.updated_by = req.user?.user_id || 0;
     courseType.updated_at = new Date();

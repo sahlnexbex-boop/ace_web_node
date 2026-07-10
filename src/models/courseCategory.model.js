@@ -34,6 +34,10 @@ CourseCategory.init(
       allowNull: false,
       defaultValue: 1,
     },
+    V2_category: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
     category_image: {
       type: DataTypes.STRING(500),
       allowNull: true,

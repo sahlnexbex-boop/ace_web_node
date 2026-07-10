@@ -20,6 +20,10 @@ CourseType.init(
       allowNull: false,
       defaultValue: 1, 
     },
+    V2_category: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
     created_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,

@@ -3,7 +3,7 @@ import { Op, Sequelize } from "sequelize";
 
 export const createBranch = async (req, res) => {
     try {
-        const { branch_name, branch_address, branch_phone, status } = req.body;
+        const { branch_name, branch_address, branch_phone, status, V2_branch } = req.body;
 
         if (!branch_name || !branch_phone) {
             return res.status(400).json({ status: 0, message: "branch_name & branch_phone is required" });
@@ -25,6 +25,7 @@ export const createBranch = async (req, res) => {
             branch_address,
             branch_phone,
             status: status !== undefined ? status : 1,
+            V2_branch: V2_branch !== undefined ? V2_branch : null,
         });
         return res.status(201).json({
             status: true,
@@ -90,7 +91,7 @@ export const getBranchById = async (req, res) => {
 export const updateBranch = async (req, res) => {
     try {
         const { id } = req.params;
-        const { branch_name, branch_address, branch_phone, status } = req.body;
+        const { branch_name, branch_address, branch_phone, status, V2_branch } = req.body;
 
         const branch = await Branch.findByPk(id);
         if (!branch) {
@@ -101,6 +102,7 @@ export const updateBranch = async (req, res) => {
         if (branch_address) branch.branch_address = branch_address;
         if (branch_phone) branch.branch_phone = branch_phone;
         if (status !== undefined) branch.status = status;
+        if (V2_branch !== undefined) branch.V2_branch = V2_branch;
 
         await branch.save();
         return res.status(200).json({

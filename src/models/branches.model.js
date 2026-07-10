@@ -25,6 +25,10 @@ const Branches = sequelize.define(
             type: DataTypes.TINYINT,
             defaultValue: 1,
         },
+        V2_branch: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+        },
         created_by: {
             type: DataTypes.INTEGER,
             defaultValue: 0,
