@@ -54,11 +54,33 @@ export const getCourseTypes = async (req, res) => {
       order: [["type_id", "DESC"]],
     });
 
+    // Fetch V2 categories
+    let v2Categories = [];
+    try {
+      const v2Url = process.env.NEXT_PUBLIC_ACEAPP_V2_URL || "http://localhost:8080";
+      const v2Res = await fetch(`${v2Url}/course_mang/categories/`);
+      if (v2Res.ok) {
+        v2Categories = await v2Res.json();
+      }
+    } catch (err) {
+      console.error("Error fetching V2 categories in getCourseTypes:", err.message);
+    }
+
+    // Map V2 category name to rows
+    const mappedData = rows.map((row) => {
+      const dataPlain = row.get({ plain: true });
+      const matched = v2Categories.find(
+        (c) => String(c.id) === String(dataPlain.V2_category)
+      );
+      dataPlain.V2_category_name = matched ? matched.name : null;
+      return dataPlain;
+    });
+
     res.json({
       total: count,
       page: Number(page),
       totalPages: Math.ceil(count / limit),
-      data: rows,
+      data: mappedData,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -75,9 +97,29 @@ export const getCourseTypeById = async (req, res) => {
       return res.status(404).json({ message: "Course type not found" });
     }
 
+    let V2_category_name = null;
+    if (courseType.V2_category) {
+      try {
+        const v2Url = process.env.NEXT_PUBLIC_ACEAPP_V2_URL || "http://localhost:8080";
+        const v2Res = await fetch(`${v2Url}/course_mang/categories/`);
+        if (v2Res.ok) {
+          const v2Categories = await v2Res.json();
+          const matched = v2Categories.find(
+            (c) => String(c.id) === String(courseType.V2_category)
+          );
+          if (matched) V2_category_name = matched.name;
+        }
+      } catch (err) {
+        console.error("Error fetching V2 category by ID in backend:", err.message);
+      }
+    }
+
+    const dataPlain = courseType.get({ plain: true });
+    dataPlain.V2_category_name = V2_category_name;
+
     res.json({
       message: "Course type found successfully",
-      data: courseType,
+      data: dataPlain,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

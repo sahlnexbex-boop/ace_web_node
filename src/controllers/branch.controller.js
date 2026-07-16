@@ -57,12 +57,35 @@ export const getAllBranches = async (req, res) => {
             limit: parseInt(limit),
             offset: (parseInt(page) - 1) * parseInt(limit),
         });
+
+        // Fetch V2 branches
+        let v2Branches = [];
+        try {
+            const v2Url = process.env.NEXT_PUBLIC_ACEAPP_V2_URL || "http://localhost:8080";
+            const v2Res = await fetch(`${v2Url}/course_mang/getallbranches/`);
+            if (v2Res.ok) {
+                v2Branches = await v2Res.json();
+            }
+        } catch (err) {
+            console.error("Error fetching V2 branches in getAllBranches:", err.message);
+        }
+
+        // Map V2 branch name to rows
+        const mappedData = rows.map((row) => {
+            const dataPlain = row.get({ plain: true });
+            const matched = v2Branches.find(
+                (b) => String(b.id) === String(dataPlain.V2_branch)
+            );
+            dataPlain.V2_branch_name = matched ? matched.name : null;
+            return dataPlain;
+        });
+
         return res.status(200).json({
             message: "Branches fetched successfully",
             total: count,
             page: Number(page),
             totalPages: Math.ceil(count / limit),
-            data: rows,
+            data: mappedData,
         });
     } catch (error) {
         console.log(error);
@@ -77,10 +100,31 @@ export const getBranchById = async (req, res) => {
         if (!branch) {
             return res.status(404).json({ status: 0, message: "Branch not found" });
         }
+
+        let V2_branch_name = null;
+        if (branch.V2_branch) {
+            try {
+                const v2Url = process.env.NEXT_PUBLIC_ACEAPP_V2_URL || "http://localhost:8080";
+                const v2Res = await fetch(`${v2Url}/course_mang/getallbranches/`);
+                if (v2Res.ok) {
+                    const v2Branches = await v2Res.json();
+                    const matched = v2Branches.find(
+                        (b) => String(b.id) === String(branch.V2_branch)
+                    );
+                    if (matched) V2_branch_name = matched.name;
+                }
+            } catch (err) {
+                console.error("Error fetching V2 branch by ID in backend:", err.message);
+            }
+        }
+
+        const dataPlain = branch.get({ plain: true });
+        dataPlain.V2_branch_name = V2_branch_name;
+
         return res.status(200).json({
             status: true,
             message: "Branch fetched successfully",
-            data: branch,
+            data: dataPlain,
         });
     } catch (error) {
         console.log(error);

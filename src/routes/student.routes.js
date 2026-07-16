@@ -5,6 +5,7 @@ import {
   getStudentById,
   updateStudent,
   deleteStudent,
+  createRegistrationRequest,
 } from "../controllers/student.controller.js";
 
 import { verifyAccessToken } from "../middlewares/verifyAccessToken.js";
@@ -16,6 +17,10 @@ const router = express.Router();
 
 // setup upload
 const { upload, handleUpload } = dynamicUpload("students", "std_photo");
+const { upload: regUpload, handleUpload: regHandleUpload } = dynamicUpload(
+  "registrations",
+  "student_photo"
+);
 
 router.post(
   "/",
@@ -38,5 +43,20 @@ router.put(
 );
 
 router.delete("/:id", verifyAccessToken, deleteStudent);
+
+// Registration requests
+router.post(
+  "/registration-requests",
+  regUpload.single("student_photo"),
+  regHandleUpload,
+  createRegistrationRequest
+);
+
+router.post(
+  "/registration-requests/",
+  regUpload.single("student_photo"),
+  regHandleUpload,
+  createRegistrationRequest
+);
 
 export default router;

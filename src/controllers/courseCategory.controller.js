@@ -151,11 +151,52 @@ export const getCategories = async (req, res) => {
       order: [["category_id", "DESC"]],
     });
 
+    // Fetch V2 category level names based on parentIds
+    const parentIds = Array.from(
+      new Set(
+        rows
+          .map((item) => item.courseType?.V2_category)
+          .filter(Boolean)
+      )
+    );
+
+    const levelMap = {};
+    if (parentIds.length > 0) {
+      try {
+        const v2Url = process.env.NEXT_PUBLIC_ACEAPP_V2_URL || "http://localhost:8080";
+        const promises = parentIds.map(async (v2CatId) => {
+          try {
+            const response = await fetch(`${v2Url}/course_mang/levebycategory/${v2CatId}/`);
+            if (response.ok) {
+              const levels = await response.json();
+              levels.forEach((lvl) => {
+                levelMap[String(lvl.id)] = lvl.name;
+              });
+            }
+          } catch (err) {
+            console.error(`Error loading level names for V2 parent ${v2CatId} in backend:`, err.message);
+          }
+        });
+        await Promise.all(promises);
+      } catch (err) {
+        console.error("Error fetching V2 levels in getCategories:", err.message);
+      }
+    }
+
+    // Map V2 category name to rows
+    const mappedData = rows.map((row) => {
+      const dataPlain = row.get({ plain: true });
+      dataPlain.V2_category_name = dataPlain.V2_category
+        ? levelMap[String(dataPlain.V2_category)] || null
+        : null;
+      return dataPlain;
+    });
+
     res.json({
       total: count,
       page: Number(page),
       totalPages: Math.ceil(count / limit),
-      data: rows,
+      data: mappedData,
     });
   } catch (err) {
     console.error("Error in getCategories:", err);
@@ -194,9 +235,29 @@ export const getCategoryById = async (req, res) => {
     if (!category)
       return res.status(404).json({ message: "Category not found" });
 
+    let V2_category_name = null;
+    if (category.V2_category && category.courseType?.V2_category) {
+      try {
+        const v2Url = process.env.NEXT_PUBLIC_ACEAPP_V2_URL || "http://localhost:8080";
+        const response = await fetch(
+          `${v2Url}/course_mang/levebycategory/${category.courseType.V2_category}/`
+        );
+        if (response.ok) {
+          const levels = await response.json();
+          const matched = levels.find((lvl) => String(lvl.id) === String(category.V2_category));
+          if (matched) V2_category_name = matched.name;
+        }
+      } catch (err) {
+        console.error("Error fetching V2 category by ID in backend:", err.message);
+      }
+    }
+
+    const dataPlain = category.get({ plain: true });
+    dataPlain.V2_category_name = V2_category_name;
+
     res.json({
       message: "Category found successfully",
-      data: category,
+      data: dataPlain,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

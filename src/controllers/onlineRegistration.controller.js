@@ -41,6 +41,9 @@ export const createRegistration = async (req, res) => {
 
     const registration = await OnlineRegistration.create({
       ...data,
+      is_ace_student: data.is_ace_student === "true" || data.is_ace_student === true,
+      is_online_payment: data.is_online_payment === "true" || data.is_online_payment === true,
+      amount: data.amount ? parseFloat(data.amount) : null,
       qualification: data.qualification ? JSON.parse(data.qualification) : null,
       student_photo,
     });
@@ -177,6 +180,15 @@ export const updateRegistration = async (req, res) => {
   if (req.file && reg.student_photo) deleteFile(reg.student_photo);
 
   Object.assign(reg, req.body);
+  if (req.body.is_ace_student !== undefined) {
+    reg.is_ace_student = req.body.is_ace_student === "true" || req.body.is_ace_student === true;
+  }
+  if (req.body.is_online_payment !== undefined) {
+    reg.is_online_payment = req.body.is_online_payment === "true" || req.body.is_online_payment === true;
+  }
+  if (req.body.amount !== undefined) {
+    reg.amount = req.body.amount ? parseFloat(req.body.amount) : null;
+  }
   reg.qualification = req.body.qualification
     ? JSON.parse(req.body.qualification)
     : reg.qualification;

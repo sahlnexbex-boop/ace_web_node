@@ -1,6 +1,10 @@
 import Student from "../models/student.model.js";
 import { Op } from "sequelize";
 import { deleteFile } from "../utils/fileHelper.js";
+import OnlineRegistration from "../models/onlineRegistration.model.js";
+import CourseCategory from "../models/courseCategory.model.js";
+import Course from "../models/course.model.js";
+import Branches from "../models/branches.model.js";
 
 const isUnsupportedFile = (mimetype) => {
   return !mimetype.startsWith("image/");
@@ -236,5 +240,66 @@ export const deleteStudent = async (req, res) => {
     res.json({ message: "Student deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+};
+
+// CREATE REGISTRATION REQUEST (Public/Admin v2)
+export const createRegistrationRequest = async (req, res) => {
+  try {
+    const data = req.body;
+
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+    const phoneRegex = /^[0-9]{10}$/;
+
+    if (!data.email || !emailRegex.test(data.email))
+      return res.status(400).json({ success: false, message: "Only @gmail.com allowed" });
+
+    if (!data.phone_number || !phoneRegex.test(data.phone_number))
+      return res.status(400).json({ success: false, message: "Invalid phone number" });
+
+    if (data.second_phone_no && !phoneRegex.test(data.second_phone_no))
+      return res.status(400).json({ success: false, message: "Invalid second phone number" });
+
+    const dept = await CourseCategory.findByPk(data.department_id);
+    if (!dept)
+      return res.status(400).json({ success: false, message: "Invalid department_id" });
+
+    const course = await Course.findByPk(data.course_id);
+    if (!course) return res.status(400).json({ success: false, message: "Invalid course_id" });
+
+    if (data.branch_id) {
+      const branchExists = await Branches.findByPk(data.branch_id);
+      if (!branchExists) return res.status(400).json({ success: false, message: "Invalid branch_id" });
+    }
+
+    const student_photo = req.file
+      ? `/uploads/registrations/${req.file.filename}`
+      : null;
+
+    let qualification = data.qualification;
+    if (typeof qualification === "string") {
+      try {
+        qualification = JSON.parse(qualification);
+      } catch (e) {
+        // Keep as string if it is not valid JSON
+      }
+    }
+
+    const registration = await OnlineRegistration.create({
+      ...data,
+      is_ace_student: data.is_ace_student === "true" || data.is_ace_student === true,
+      is_online_payment: data.is_online_payment === "true" || data.is_online_payment === true,
+      amount: data.amount ? parseFloat(data.amount) : null,
+      qualification,
+      student_photo,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Registration submitted successfully",
+      data: registration,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 };

@@ -17,6 +17,11 @@ const OnlineRegistration = sequelize.define(
     department_id: DataTypes.INTEGER.UNSIGNED,
     course_id: DataTypes.INTEGER.UNSIGNED,
 
+    course_mode: {
+      type: DataTypes.ENUM("Online", "Offline"),
+      allowNull: true,
+    },
+
     student_name: DataTypes.STRING(150),
     father_name: DataTypes.STRING(150),
     date_of_birth: DataTypes.DATEONLY,
@@ -37,11 +42,28 @@ const OnlineRegistration = sequelize.define(
     house_name: DataTypes.STRING(150),
     place: DataTypes.STRING(150),
     district: DataTypes.STRING(100),
+    post_office: {
+      type: DataTypes.STRING(150),
+      allowNull: true,
+    },
     pin_code: DataTypes.STRING(10),
 
     email: DataTypes.STRING(150),
     phone_number: DataTypes.STRING(10),
     second_phone_no: DataTypes.STRING(10),
+
+    is_ace_student: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    is_online_payment: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    amount: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+    },
 
     message: DataTypes.TEXT,
     student_photo: DataTypes.STRING(255),

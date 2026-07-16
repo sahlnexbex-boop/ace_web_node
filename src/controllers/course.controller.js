@@ -242,12 +242,79 @@ export const getCourses = async (req, res) => {
       order: [["course_id", "DESC"]],
     });
 
+    // Fetch V2 course names
+    const parentCatIds = Array.from(
+      new Set(
+        rows
+          .map((item) => item.category?.courseType?.V2_category)
+          .filter(Boolean)
+      )
+    );
+
+    const courseMap = {};
+    if (parentCatIds.length > 0) {
+      try {
+        const v2Url = process.env.NEXT_PUBLIC_ACEAPP_V2_URL || "http://localhost:8080";
+        const promises = parentCatIds.map(async (v2CatId) => {
+          try {
+            const response = await fetch(`${v2Url}/course_mang/courses-content/?category=${v2CatId}&pagesize=100&page=1`);
+            if (response.ok) {
+              const resultData = await response.json();
+              const results = resultData.results || [];
+              results.forEach((item) => {
+                courseMap[String(item.id)] = item.name;
+              });
+
+              // Fetch remaining pages if count > 100
+              const totalCount = resultData.count || 0;
+              if (totalCount > 100) {
+                const totalPages = Math.ceil(totalCount / 100);
+                const extraPages = [];
+                for (let p = 2; p <= totalPages; p++) {
+                  extraPages.push(p);
+                }
+                const pagePromises = extraPages.map(async (p) => {
+                  try {
+                    const pageRes = await fetch(`${v2Url}/course_mang/courses-content/?category=${v2CatId}&pagesize=100&page=${p}`);
+                    if (pageRes.ok) {
+                      const pageData = await pageRes.json();
+                      const pageResults = pageData.results || [];
+                      pageResults.forEach((item) => {
+                        courseMap[String(item.id)] = item.name;
+                      });
+                    }
+                  } catch (e) {
+                    console.error(`Error loading course page ${p} for category ${v2CatId}:`, e.message);
+                  }
+                });
+                await Promise.all(pagePromises);
+              }
+            }
+          } catch (err) {
+            console.error(`Error loading course names for V2 parent ${v2CatId} in backend:`, err.message);
+          }
+        });
+        await Promise.all(promises);
+      } catch (err) {
+        console.error("Error fetching V2 courses in getCourses:", err.message);
+      }
+    }
+
+    // Map V2 course name to rows
+    const mappedData = rows.map((row) => {
+      const dataPlain = row.get({ plain: true });
+      dataPlain.V2_course_name = dataPlain.V2_course
+        ? courseMap[String(dataPlain.V2_course)] || null
+        : null;
+      return dataPlain;
+    });
+
     res.json({
       message: "Courses fetched successfully",
       total: count,
       page: Number(page),
       totalPages: Math.ceil(count / limit),
-      data: rows,
+      data: mappedData,
     });
   } catch (err) {
     console.error("Error in getCourses:", err);
@@ -301,9 +368,55 @@ export const getCourseById = async (req, res) => {
 
     if (!course) return res.status(404).json({ message: "Course not found" });
 
+    let V2_course_name = null;
+    if (course.V2_course && course.category?.courseType?.V2_category) {
+      try {
+        const v2Url = process.env.NEXT_PUBLIC_ACEAPP_V2_URL || "http://localhost:8080";
+        const v2CatId = course.category.courseType.V2_category;
+        const response = await fetch(
+          `${v2Url}/course_mang/courses-content/?category=${v2CatId}&pagesize=100&page=1`
+        );
+        if (response.ok) {
+          const resultData = await response.json();
+          const results = resultData.results || [];
+          let matched = results.find((item) => String(item.id) === String(course.V2_course));
+          
+          if (matched) {
+            V2_course_name = matched.name;
+          } else {
+            const totalCount = resultData.count || 0;
+            if (totalCount > 100) {
+              const totalPages = Math.ceil(totalCount / 100);
+              for (let p = 2; p <= totalPages; p++) {
+                try {
+                  const pageRes = await fetch(`${v2Url}/course_mang/courses-content/?category=${v2CatId}&pagesize=100&page=${p}`);
+                  if (pageRes.ok) {
+                    const pageData = await pageRes.json();
+                    const pageResults = pageData.results || [];
+                    const found = pageResults.find((item) => String(item.id) === String(course.V2_course));
+                    if (found) {
+                      V2_course_name = found.name;
+                      break;
+                    }
+                  }
+                } catch (e) {
+                  console.error(`Error loading course page ${p} for V2 course ${course.V2_course}:`, e.message);
+                }
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching V2 course by ID in backend:", err.message);
+      }
+    }
+
+    const dataPlain = course.get({ plain: true });
+    dataPlain.V2_course_name = V2_course_name;
+
     res.json({
       message: "Course found successfully",
-      data: course,
+      data: dataPlain,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
