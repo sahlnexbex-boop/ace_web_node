@@ -204,7 +204,7 @@ export const createCourse = async (req, res) => {
 // list
 export const getCourses = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = "", category_id, status } = req.query;
+    const { page = 1, limit = 10, search = "", category_id, status, v2_connected, v2_conneceted } = req.query;
     const offset = (page - 1) * limit;
 
     const where = {};
@@ -219,6 +219,10 @@ export const getCourses = async (req, res) => {
 
     if (status !== undefined && (status === "0" || status === "1")) {
       where.status = Number(status);
+    }
+
+    if (v2_connected === "true" || v2_conneceted === "true") {
+      where.V2_course = { [Op.ne]: null };
     }
 
     const { rows, count } = await Course.findAndCountAll({

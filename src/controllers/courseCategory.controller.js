@@ -66,7 +66,7 @@ export const createCategory = async (req, res) => {
 // list
 export const getCategories = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = "", type_id, status, course_type } =
+    const { page = 1, limit = 10, search = "", type_id, status, course_type, v2_connected, v2_conneceted } =
       req.query;
     const offset = (page - 1) * limit;
 
@@ -82,6 +82,10 @@ export const getCategories = async (req, res) => {
 
     if (status !== undefined && (status === "0" || status === "1")) {
       where.status = Number(status);
+    }
+
+    if (v2_connected === "true" || v2_conneceted === "true") {
+      where.V2_category = { [Op.ne]: null };
     }
 
     // Filter categories that have at least one course with matching course_type (1 or 2)

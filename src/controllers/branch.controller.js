@@ -40,7 +40,7 @@ export const createBranch = async (req, res) => {
 
 export const getAllBranches = async (req, res) => {
     try {
-        const { page = 1, limit = 10, search = "", status, } = req.query;
+        const { page = 1, limit = 10, search = "", status, v2_connected, v2_conneceted } = req.query;
         const where = {};
         if (search) {
             where[Op.or] = [
@@ -51,6 +51,9 @@ export const getAllBranches = async (req, res) => {
         }
         if (status) {
             where.status = status;
+        }
+        if (v2_connected === "true" || v2_conneceted === "true") {
+            where.V2_branch = { [Op.ne]: null };
         }
         const { rows, count } = await Branch.findAndCountAll({
             where,
