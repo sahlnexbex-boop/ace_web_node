@@ -53,9 +53,44 @@ const __dirname = path.dirname(__filename);
 dotenv.config();
 
 const app = express();
+
+const allowedOrigins = [];
+if (process.env.FRONTEND_URL) {
+  process.env.FRONTEND_URL.split(",").forEach((origin) => {
+    const trimmed = origin.trim();
+    if (trimmed) {
+      allowedOrigins.push(trimmed);
+      try {
+        const url = new URL(trimmed);
+        const hostname = url.hostname;
+        if (
+          hostname !== "localhost" &&
+          hostname !== "127.0.0.1" &&
+          !hostname.match(/^\d+\.\d+\.\d+\.\d+$/)
+        ) {
+          if (hostname.startsWith("www.")) {
+            const nonWwwHostname = hostname.substring(4);
+            const nonWwwUrl = `${url.protocol}//${nonWwwHostname}${url.port ? ":" + url.port : ""}`;
+            if (!allowedOrigins.includes(nonWwwUrl)) {
+              allowedOrigins.push(nonWwwUrl);
+            }
+          } else {
+            const wwwUrl = `${url.protocol}//www.${hostname}${url.port ? ":" + url.port : ""}`;
+            if (!allowedOrigins.includes(wwwUrl)) {
+              allowedOrigins.push(wwwUrl);
+            }
+          }
+        }
+      } catch (e) {
+        // Ignore URL parsing errors
+      }
+    }
+  });
+}
+
 app.use(
   cors({
-    origin: [process.env.FRONTEND_URL],
+    origin: allowedOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
